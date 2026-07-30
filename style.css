@@ -2613,22 +2613,182 @@ body {
   display: none;
 }
 
+/* ==========================================================================
+   MOBILE APPLE CALENDAR DOT SYSTEM & SELECTED DAY PANEL
+   ========================================================================== */
+
+/* Dots container in calendar cells */
+.cell-dots-container {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+
+.cell-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  display: inline-block;
+}
+
+.cell-dot.cat-lavoro { background: #3b82f6 !important; }
+.cell-dot.cat-personale { background: #10b981 !important; }
+.cell-dot.cat-studio { background: #f59e0b !important; }
+.cell-dot.cat-salute { background: #f43f5e !important; }
+.cell-dot.cat-finanza { background: #8b5cf6 !important; }
+.cell-dot.cat-altro { background: #64748b !important; }
+
+/* Selected Day Ring in Calendar Grid */
+.calendar-cell.selected-day {
+  background: var(--accent-light) !important;
+  border-color: var(--accent-primary) !important;
+}
+
+.calendar-cell.selected-day .cell-day-num {
+  background: var(--accent-primary);
+  color: #ffffff !important;
+  font-weight: 700;
+}
+
+/* Mobile Apple Calendar View Media Query (<= 640px) */
 @media (max-width: 640px) {
-  .badge-text-start,
-  .badge-text-end {
+  .cell-events-container {
     display: none !important;
   }
-  .badge-icon-start,
-  .badge-icon-end {
-    display: inline !important;
-    font-size: 0.7rem;
+
+  .cell-dots-container {
+    display: flex !important;
   }
-  .multi-day-item {
-    height: 18px;
-    line-height: 16px;
-    font-size: 0.65rem;
-    padding: 0 2px !important;
+
+  .calendar-cell {
+    min-height: 52px !important;
+    max-height: 52px !important;
+    height: 52px !important;
+    padding: 4px 2px !important;
+    align-items: center;
+    justify-content: flex-start;
   }
+
+  .cell-header {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .cell-add-btn {
+    display: none !important;
+  }
+
+  .cell-day-num {
+    font-size: 0.85rem !important;
+    width: 26px !important;
+    height: 26px !important;
+    min-width: 26px !important;
+    min-height: 26px !important;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Selected Day Drawer / Panel (Apple Calendar Style) */
+.selected-day-panel {
+  margin-top: 14px;
+  background: #ffffff;
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.selected-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--bg-card-border);
+}
+
+.selected-day-header h4 {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.selected-day-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.selected-day-empty {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  padding: 18px 0;
+}
+
+.selected-day-card {
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.selected-day-card:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+}
+
+.selected-day-card .card-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.selected-day-card .card-left strong {
+  font-size: 0.88rem;
+  color: var(--text-main);
+}
+
+.selected-day-card .card-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.selected-day-card .badge-type {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.selected-day-card .badge-type.event {
+  background: var(--accent-light);
+  color: var(--accent-primary);
+}
+
+.selected-day-card .badge-type.task {
+  background: #f1f5f9;
+  color: var(--text-muted);
 }
 
 .event-highlight-sync {

@@ -130,9 +130,13 @@ function renderMonthGrid(container, year, month) {
     cellHeader.appendChild(addBtn);
     cell.appendChild(cellHeader);
 
-    // Contenitore Eventi & Task della cella
+    // Contenitore Eventi & Task per Desktop
     const eventsContainer = document.createElement('div');
     eventsContainer.className = 'cell-events-container';
+
+    // Contenitore Pallini Colorati per Mobile (Apple Calendar Style)
+    const dotsContainer = document.createElement('div');
+    dotsContainer.className = 'cell-dots-container';
 
     // 1. Filtra Eventi per questa data (inclusi eventi multi-giorno)
     const dayEvents = AppState.events.filter(e => {
@@ -149,6 +153,7 @@ function renderMonthGrid(container, year, month) {
     });
 
     dayEvents.forEach(evt => {
+      // Desktop Item Rendering
       const evtEl = document.createElement('div');
       const info = getMultiDayInfo(evt, cellDateStr, i);
       const catClass = evt.category ? `cat-${evt.category}` : 'cat-lavoro';
@@ -157,13 +162,11 @@ function renderMonthGrid(container, year, month) {
 
       if (info.isMultiDay) {
         if (info.isFirstDay) {
-          evtEl.innerHTML = `<span class="multiday-label-start"><span class="badge-text-start">Inizio: </span><span class="badge-icon-start">▶ </span>${escapeHtml(evt.title)}</span>`;
-        } else if (info.isRowStart && !info.isFirstDay) {
-          evtEl.innerHTML = `<span class="multiday-label-cont"><span class="multi-day-arrow">◀ </span>${escapeHtml(evt.title)}</span>`;
+          evtEl.innerHTML = `<span class="multiday-label-start"><strong>Inizio: </strong>${escapeHtml(evt.title)}</span>`;
         } else if (info.isLastDay) {
-          evtEl.innerHTML = `<span class="multiday-label-end"><span class="badge-text-end">Fine: </span><span class="badge-icon-end">🏁 </span>${escapeHtml(evt.title)}</span>`;
+          evtEl.innerHTML = `<span class="multiday-label-end"><strong>Fine: </strong>${escapeHtml(evt.title)}</span>`;
         } else {
-          evtEl.innerHTML = `<span class="multiday-bar-clean"></span>`;
+          evtEl.innerHTML = `<span class="multiday-label-cont">${escapeHtml(evt.title)}</span>`;
         }
       } else {
         const timeStr = evt.timeStart ? formatTime24h(evt.timeStart) : '';
@@ -171,7 +174,6 @@ function renderMonthGrid(container, year, month) {
         evtEl.innerHTML = `${timeDisplay}${escapeHtml(evt.title)}`;
       }
 
-      // Hover / Touch sync highlight per tutti i giorni dello stesso evento
       evtEl.addEventListener('mouseenter', () => highlightEventSync(evt.id, true));
       evtEl.addEventListener('mouseleave', () => highlightEventSync(evt.id, false));
 
@@ -180,6 +182,12 @@ function renderMonthGrid(container, year, month) {
         openEventDetailModal(evt);
       });
       eventsContainer.appendChild(evtEl);
+
+      // Mobile Dot Rendering (Apple Calendar Style)
+      const dot = document.createElement('span');
+      dot.className = `cell-dot ${catClass}`;
+      dot.title = evt.title;
+      dotsContainer.appendChild(dot);
     });
 
     // 2. Filtra Task per questa data
@@ -204,15 +212,100 @@ function renderMonthGrid(container, year, month) {
         openTaskDetailModal(task);
       });
       eventsContainer.appendChild(taskEl);
+
+      // Mobile Task Dot
+      const dot = document.createElement('span');
+      const catClass = task.category ? `cat-${task.category}` : 'cat-altro';
+      dot.className = `cell-dot task-dot ${catClass}`;
+      dot.title = task.title;
+      dotsContainer.appendChild(dot);
     });
 
     cell.appendChild(eventsContainer);
+    cell.appendChild(dotsContainer);
 
-    // Integrazione Drag & Drop per spostare Memo nel calendario
+    // Evidenzia se è il giorno selezionato
+    const currentSelected = AppState.selectedDate || todayStr;
+    if (cellDateStr === currentSelected) {
+      cell.classList.add('selected-day');
+    }
+
+    // Gestione click sulla cella (Selezione giorno per pannello in basso)
+    cell.addEventListener('click', () => {
+      AppState.selectedDate = cellDateStr;
+      document.querySelectorAll('.calendar-cell').forEach(c => c.classList.remove('selected-day'));
+      cell.classList.add('selected-day');
+      renderSelectedDayPanel(cellDateStr);
+    });
+
     setupCellDragAndDrop(cell, cellDateStr);
-
     container.appendChild(cell);
   }
+
+  // Renderizza il pannello del giorno selezionato all'inizializzazione del mese
+  renderSelectedDayPanel(AppState.selectedDate || todayStr);
+}
+
+export function renderSelectedDayPanel(dateStr) {
+  const panel = document.getElementById('selectedDayPanel');
+  const title = document.getElementById('selectedDayTitle');
+  const list = document.getElementById('selectedDayList');
+  const addBtn = document.getElementById('addSelectedDayEventBtn');
+  if (!panel || !title || !list) return;
+
+  const targetDateStr = dateStr || formatDateKey(new Date());
+  title.textContent = formatDateItalian(targetDateStr);
+
+  if (addBtn) {
+    addBtn.onclick = () => openEventModal({ date: targetDateStr });
+  }
+
+  list.innerHTML = '';
+
+  const dayEvents = AppState.events.filter(e => {
+    const eventStart = e.date;
+    const eventEnd = e.dateEnd || e.date;
+    return targetDateStr >= eventStart && targetDateStr <= eventEnd;
+  });
+
+  const dayTasks = AppState.tasks.filter(t => t.dueDate === targetDateStr);
+
+  if (dayEvents.length === 0 && dayTasks.length === 0) {
+    list.innerHTML = `<div class="selected-day-empty">Nessun evento o memo programmato per questa data.</div>`;
+    return;
+  }
+
+  dayEvents.forEach(evt => {
+    const item = document.createElement('div');
+    const catClass = evt.category ? `cat-${evt.category}` : 'cat-lavoro';
+    item.className = `selected-day-card event-card ${catClass}`;
+
+    const timeDesc = evt.timeStart ? (formatTime24h(evt.timeStart) + (evt.timeEnd ? ' - ' + formatTime24h(evt.timeEnd) : '')) : 'Tutto il giorno';
+    item.innerHTML = `
+      <div class="card-left">
+        <strong>${escapeHtml(evt.title)}</strong>
+        <span class="card-sub">${timeDesc} • Categoria: ${evt.category || 'Generale'}</span>
+      </div>
+      <span class="badge-type event">Evento</span>
+    `;
+    item.onclick = () => openEventDetailModal ? openEventDetailModal(evt) : openEventModal(evt);
+    list.appendChild(item);
+  });
+
+  dayTasks.forEach(task => {
+    const item = document.createElement('div');
+    item.className = `selected-day-card task-card ${task.urgency} ${task.status === 'completed' ? 'completed' : ''}`;
+    item.innerHTML = `
+      <div class="card-left">
+        <strong style="${task.status === 'completed' ? 'text-decoration: line-through; color: var(--text-dim);' : ''}">${escapeHtml(task.title)}</strong>
+        <span class="card-sub">Urgenza: ${task.urgency.toUpperCase()} • Stato: ${task.status}</span>
+      </div>
+      <span class="badge-type task ${task.urgency}">${task.urgency}</span>
+    `;
+    item.onclick = () => openTaskDetailModal ? openTaskDetailModal(task) : openTaskModal(task);
+    list.appendChild(item);
+  });
+}
 }
 
 // Drag & Drop per le celle del calendario

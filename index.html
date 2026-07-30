@@ -24,7 +24,7 @@
     rel="stylesheet">
 
   <!-- CSS Styles -->
-  <link rel="stylesheet" href="style.css?v=7">
+  <link rel="stylesheet" href="style.css?v=8">
 </head>
 
 <body>
@@ -330,6 +330,17 @@
           </div>
           <div id="calendarGrid" class="calendar-grid">
             <!-- Grid items -->
+          </div>
+
+          <!-- Selected Day Agenda Drawer (Mobile Apple Calendar Style) -->
+          <div id="selectedDayPanel" class="selected-day-panel mobile-only">
+            <div class="selected-day-header">
+              <h4 id="selectedDayTitle">Venerdì 31 Luglio 2026</h4>
+              <button id="addSelectedDayEventBtn" class="btn btn-secondary-sm">+ Aggiungi</button>
+            </div>
+            <div id="selectedDayList" class="selected-day-list">
+              <!-- Lista eventi/memo del giorno selezionato -->
+            </div>
           </div>
         </div>
 
@@ -807,7 +818,7 @@
   <input type="date" id="taskDateAssignInput" class="visually-hidden-date-input" aria-hidden="true">
 
   <!-- JavaScript -->
-  <script src="js/app.js?v=7"></script>
+  <script src="js/app.js?v=8"></script>
 </body>
 
 </html>

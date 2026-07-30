@@ -1006,15 +1006,17 @@
       addBtn.title = `Nuovo evento per il ${formatDateShortItalian(cellDateStr)}`;
       addBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        openEventModal({ date: cellDateStr });
-      });
-
       cellHeader.appendChild(dayNumSpan);
       cellHeader.appendChild(addBtn);
       cell.appendChild(cellHeader);
 
+      // Contenitore Eventi & Task per Desktop
       const eventsContainer = document.createElement('div');
       eventsContainer.className = 'cell-events-container';
+
+      // Contenitore Pallini Colorati per Mobile (Apple Calendar Style)
+      const dotsContainer = document.createElement('div');
+      dotsContainer.className = 'cell-dots-container';
 
       const dayEvents = AppState.events.filter(e => {
         const eventStart = e.date;
@@ -1034,6 +1036,7 @@
       });
 
       dayEvents.forEach(evt => {
+        // Desktop Item Rendering
         const evtEl = document.createElement('div');
         const info = getMultiDayInfo(evt, cellDateStr, i);
         const catClass = evt.category ? `cat-${evt.category}` : 'cat-lavoro';
@@ -1042,13 +1045,11 @@
 
         if (info.isMultiDay) {
           if (info.isFirstDay) {
-            evtEl.innerHTML = `<span class="multiday-label-start"><span class="badge-text-start">Inizio: </span><span class="badge-icon-start">▶ </span>${escapeHtml(evt.title)}</span>`;
-          } else if (info.isRowStart && !info.isFirstDay) {
-            evtEl.innerHTML = `<span class="multiday-label-cont"><span class="multi-day-arrow">◀ </span>${escapeHtml(evt.title)}</span>`;
+            evtEl.innerHTML = `<span class="multiday-label-start"><strong>Inizio: </strong>${escapeHtml(evt.title)}</span>`;
           } else if (info.isLastDay) {
-            evtEl.innerHTML = `<span class="multiday-label-end"><span class="badge-text-end">Fine: </span><span class="badge-icon-end">🏁 </span>${escapeHtml(evt.title)}</span>`;
+            evtEl.innerHTML = `<span class="multiday-label-end"><strong>Fine: </strong>${escapeHtml(evt.title)}</span>`;
           } else {
-            evtEl.innerHTML = `<span class="multiday-bar-clean"></span>`;
+            evtEl.innerHTML = `<span class="multiday-label-cont">${escapeHtml(evt.title)}</span>`;
           }
         } else {
           const timeFormatted = evt.timeStart ? formatTimeItalian(evt.timeStart) : '';
@@ -1064,6 +1065,12 @@
           openEventModal(evt);
         });
         eventsContainer.appendChild(evtEl);
+
+        // Mobile Dot Rendering (Apple Calendar Style)
+        const dot = document.createElement('span');
+        dot.className = `cell-dot ${catClass}`;
+        dot.title = evt.title;
+        dotsContainer.appendChild(dot);
       });
 
       const dayTasks = AppState.tasks.filter(t => {
@@ -1079,20 +1086,14 @@
 
       dayTasks.forEach(task => {
         const taskEl = document.createElement('div');
-        const catClass = task.category ? `cat-${task.category}` : 'cat-altro';
-        taskEl.className = `cell-item task-item ${catClass} ${task.urgency} ${task.status === 'completed' ? 'completed' : ''}`;
-        taskEl.innerHTML = escapeHtml(task.title);
+        taskEl.className = `cell-item task-item ${task.urgency} ${task.status === 'completed' ? 'completed' : ''}`;
+        const statusIcon = task.status === 'completed' ? '✓' : '📌';
+        taskEl.innerHTML = `<span class="status">${statusIcon}</span> ${escapeHtml(task.title)}`;
         taskEl.addEventListener('click', (e) => {
           e.stopPropagation();
           openTaskModal(task);
         });
         eventsContainer.appendChild(taskEl);
-      });
-
-      // Mobile: limit visible items to 2, show overflow counter
-      const isMobile = window.innerWidth <= 768;
-      if (isMobile) {
-        const allItems = eventsContainer.querySelectorAll('.cell-item');
         const maxVisible = 2;
         if (allItems.length > maxVisible) {
           for (let idx = maxVisible; idx < allItems.length; idx++) {
