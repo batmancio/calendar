@@ -1094,22 +1094,23 @@
             openTaskModal(task);
           });
           eventsContainer.appendChild(taskEl);
-          const maxVisible = 2;
-          if (allItems.length > maxVisible) {
-            for (let idx = maxVisible; idx < allItems.length; idx++) {
-              allItems[idx].style.display = 'none';
-            }
-            const overflowEl = document.createElement('div');
-            overflowEl.className = 'cell-events-overflow';
-            overflowEl.textContent = `+${allItems.length - maxVisible}`;
-            overflowEl.addEventListener('click', (e) => {
-              e.stopPropagation();
-              // Show all items when tapped
-              allItems.forEach(item => item.style.display = '');
-              overflowEl.remove();
-            });
-            eventsContainer.appendChild(overflowEl);
+        });
+
+        const maxVisible = 2;
+        const allItems = eventsContainer.querySelectorAll('.cell-item');
+        if (allItems.length > maxVisible) {
+          for (let idx = maxVisible; idx < allItems.length; idx++) {
+            allItems[idx].style.display = 'none';
           }
+          const overflowEl = document.createElement('div');
+          overflowEl.className = 'cell-events-overflow';
+          overflowEl.textContent = `+${allItems.length - maxVisible}`;
+          overflowEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            allItems.forEach(item => item.style.display = '');
+            overflowEl.remove();
+          });
+          eventsContainer.appendChild(overflowEl);
         }
 
       cell.appendChild(eventsContainer);
