@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Chronos | Calendario, Eventi & Memo con Urgenza</title>
+  <meta name="description" content="Applicazione web per la gestione integrata di calendario eventi categorizzati e memo/task con livello di urgenza.">
+  
+  <!-- PWA & Mobile Web App Meta Tags for iOS / iPhone -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0b0f19">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Chronos">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236366f1'><rect x='3' y='4' width='18' height='18' rx='4' fill='%23111827' stroke='%236366f1' stroke-width='2'/><circle cx='8' cy='14' r='1.5' fill='%23ff4757'/><circle cx='12' cy='14' r='1.5' fill='%23ffa502'/><circle cx='16' cy='14' r='1.5' fill='%232ed573'/></svg>">
+
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- CSS Styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header App -->
+    <header class="app-header">
+      <div class="header-brand">
+        <button id="toggleSidebarMobileBtn" class="btn-icon mobile-only-inline" title="Apri Memo & Filtri">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="4" ry="4"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+            <circle cx="8" cy="15" r="1" fill="currentColor"></circle>
+            <circle cx="12" cy="15" r="1" fill="currentColor"></circle>
+            <circle cx="16" cy="15" r="1" fill="currentColor"></circle>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">Chronos</h1>
+          <span class="brand-subtitle">Calendario & Memo Hub</span>
+        </div>
+      </div>
+
+      <!-- Controls & Quick Actions -->
+      <div class="header-controls">
+        <!-- Account Status / Login Button -->
+        <div id="accountUserWidget" class="account-widget">
+          <button id="openAuthModalBtn" class="btn btn-secondary-sm" title="Accedi con il tuo Account per sincronizzare su Redis">
+            👤 <span class="btn-text">Accedi / Registrati</span>
+          </button>
+          <div id="userInfoBadge" class="user-badge hidden">
+            <span class="user-name-text">👤 <strong id="currentUsernameLabel">matteo</strong></span>
+            <button id="logoutBtn" class="btn-icon-xs" title="Disconnetti Account">&times;</button>
+          </div>
+        </div>
+
+        <div class="view-switchers" role="tablist">
+          <button id="viewMonthBtn" class="btn-tab active" role="tab" aria-selected="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            <span class="btn-text">Mese</span>
+          </button>
+          <button id="viewAgendaBtn" class="btn-tab" role="tab" aria-selected="false">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+            <span class="btn-text">Agenda</span>
+          </button>
+        </div>
+
+        <div class="action-buttons">
+          <!-- Backup / Sync Buttons -->
+          <button id="exportDataBtn" class="btn btn-secondary-sm" title="Esporta Backup JSON">
+            📥 <span class="btn-text">Esporta</span>
+          </button>
+          <button id="importDataBtn" class="btn btn-secondary-sm" title="Importa Backup JSON">
+            📤 <span class="btn-text">Importa</span>
+          </button>
+          <input type="file" id="importFileInput" accept=".json" class="hidden">
+
+          <button id="addEventBtn" class="btn btn-secondary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            + Evento
+          </button>
+          <button id="addTaskBtn" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            + Memo
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Layout -->
+    <div class="app-layout">
+      <!-- Sidebar / Task & Memo Drawer -->
+      <aside id="appSidebar" class="app-sidebar">
+        <div class="sidebar-header-mobile mobile-only">
+          <h3>Memo & Filtri</h3>
+          <button id="closeSidebarMobileBtn" class="btn-icon">&times;</button>
+        </div>
+
+        <!-- Dashboard Stats Widget -->
+        <div class="sidebar-section urgency-stats-widget">
+          <h2 class="section-title">Panoramica Urgenze</h2>
+          <div class="urgency-grid">
+            <div class="urgency-card critical" data-urgency="critical" title="Filtra per urgenza Critica">
+              <span class="card-count" id="countCritical">0</span>
+              <span class="card-label">Critica</span>
+            </div>
+            <div class="urgency-card high" data-urgency="high" title="Filtra per urgenza Alta">
+              <span class="card-count" id="countHigh">0</span>
+              <span class="card-label">Alta</span>
+            </div>
+            <div class="urgency-card medium" data-urgency="medium" title="Filtra per urgenza Media">
+              <span class="card-count" id="countMedium">0</span>
+              <span class="card-label">Media</span>
+            </div>
+            <div class="urgency-card low" data-urgency="low" title="Filtra per urgenza Bassa">
+              <span class="card-count" id="countLow">0</span>
+              <span class="card-label">Bassa</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filters & Search -->
+        <div class="sidebar-section filters-section">
+          <div class="search-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="taskSearchInput" placeholder="Cerca tra eventi e memo...">
+          </div>
+          
+          <div class="filter-group">
+            <label for="filterCategory">Categoria</label>
+            <select id="filterCategory" class="custom-select">
+              <option value="all">Tutte le Categorie</option>
+              <option value="lavoro">💼 Lavoro</option>
+              <option value="personale">🏠 Personale</option>
+              <option value="studio">📚 Studio</option>
+              <option value="salute">❤️ Salute</option>
+              <option value="finanza">💰 Finanza</option>
+              <option value="altro">📌 Altro</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="filterUrgency">Urgenza</label>
+            <select id="filterUrgency" class="custom-select">
+              <option value="all">Tutte le Urgenze</option>
+              <option value="critical">🔴 Critica</option>
+              <option value="high">🟠 Alta</option>
+              <option value="medium">🟡 Media</option>
+              <option value="low">🟢 Bassa</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Task & Memo Drawer List -->
+        <div class="sidebar-section memo-drawer-section">
+          <div class="drawer-header">
+            <div class="drawer-tabs">
+              <button id="tabUndatedMemo" class="tab-sub active">Memo Sospesi</button>
+              <button id="tabAllTasks" class="tab-sub">Tutte le Task</button>
+            </div>
+            <span class="badge-count" id="drawerTaskCount">0</span>
+          </div>
+
+          <div class="task-list-scroll" id="sidebarTaskList">
+            <!-- Dynamic task items loaded here -->
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Calendar Area -->
+      <main class="app-main">
+        <!-- Calendar Controls Toolbar -->
+        <div class="calendar-toolbar">
+          <div class="calendar-nav">
+            <button id="prevMonthBtn" class="btn-icon" title="Mese precedente">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <button id="todayBtn" class="btn btn-secondary-sm">Oggi</button>
+            <button id="nextMonthBtn" class="btn-icon" title="Mese successivo">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+            <h2 id="currentMonthYearLabel" class="current-month-title">Luglio 2026</h2>
+          </div>
+
+          <div class="legend-bar desktop-only">
+            <div class="legend-item"><span class="dot dot-critical"></span>Critica</div>
+            <div class="legend-item"><span class="dot dot-high"></span>Alta</div>
+            <div class="legend-item"><span class="dot dot-medium"></span>Media</div>
+            <div class="legend-item"><span class="dot dot-low"></span>Bassa</div>
+          </div>
+        </div>
+
+        <!-- Calendar View Wrapper -->
+        <div id="calendarViewContainer" class="view-container">
+          <div class="calendar-days-header">
+            <div>Lun</div>
+            <div>Mar</div>
+            <div>Mer</div>
+            <div>Gio</div>
+            <div>Ven</div>
+            <div>Sab</div>
+            <div>Dom</div>
+          </div>
+          <div id="calendarGrid" class="calendar-grid">
+            <!-- 35 or 42 grid items rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Agenda View Container -->
+        <div id="agendaViewContainer" class="view-container hidden">
+          <div class="agenda-header">
+            <h3>Prossimi Eventi & Task Programmate</h3>
+          </div>
+          <div id="agendaList" class="agenda-list">
+            <!-- Dynamic agenda items -->
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal: Evento -->
+  <div id="eventModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="eventModalTitle">Nuovo Evento</h3>
+        <button class="btn-icon modal-close" data-close="eventModal">&times;</button>
+      </div>
+      <form id="eventForm" class="modal-form">
+        <input type="hidden" id="eventId">
+        
+        <div class="form-group">
+          <label for="eventTitle">Titolo Evento *</label>
+          <input type="text" id="eventTitle" placeholder="Es. Riunione di Progetto" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="eventDate">Data *</label>
+            <input type="date" id="eventDate" required>
+          </div>
+          <div class="form-group">
+            <label for="eventTimeStart">Ora Inizio</label>
+            <input type="time" id="eventTimeStart" value="09:00">
+          </div>
+          <div class="form-group">
+            <label for="eventTimeEnd">Ora Fine</label>
+            <input type="time" id="eventTimeEnd" value="10:00">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="eventCategory">Categoria *</label>
+          <select id="eventCategory" class="custom-select" required>
+            <option value="lavoro">💼 Lavoro</option>
+            <option value="personale">🏠 Personale</option>
+            <option value="studio">📚 Studio</option>
+            <option value="salute">❤️ Salute</option>
+            <option value="finanza">💰 Finanza</option>
+            <option value="altro">📌 Altro</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="eventDescription">Note / Descrizione</label>
+          <textarea id="eventDescription" rows="3" placeholder="Dettagli dell'evento, link o luogo..."></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-tertiary modal-close" data-close="eventModal">Annulla</button>
+          <button type="button" id="deleteEventBtn" class="btn btn-danger hidden">Elimina</button>
+          <button type="submit" class="btn btn-primary">Salva Evento</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Task / Memo -->
+  <div id="taskModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="taskModalTitle">Nuovo Memo / Task</h3>
+        <button class="btn-icon modal-close" data-close="taskModal">&times;</button>
+      </div>
+      <form id="taskForm" class="modal-form">
+        <input type="hidden" id="taskId">
+
+        <div class="form-group">
+          <label for="taskTitle">Titolo Task / Memo *</label>
+          <input type="text" id="taskTitle" placeholder="Es. Revisione documenti contabili" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="taskUrgency">Livello di Urgenza *</label>
+            <select id="taskUrgency" class="custom-select" required>
+              <option value="critical">🔴 Critica (Azione Immediata)</option>
+              <option value="high">🟠 Alta (Prioritaria)</option>
+              <option value="medium" selected>🟡 Media (Normale)</option>
+              <option value="low">🟢 Bassa (Facoltativa)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="taskCategory">Categoria</label>
+            <select id="taskCategory" class="custom-select">
+              <option value="lavoro">💼 Lavoro</option>
+              <option value="personale">🏠 Personale</option>
+              <option value="studio">📚 Studio</option>
+              <option value="salute">❤️ Salute</option>
+              <option value="finanza">💰 Finanza</option>
+              <option value="altro" selected>📌 Altro</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="taskDueDate">Data Scadenza / Assegnata <small>(Opzionale)</small></label>
+            <input type="date" id="taskDueDate">
+            <span class="help-text">Lascia vuoto per creare un memo fluttuante.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="taskStatus">Stato</label>
+            <select id="taskStatus" class="custom-select">
+              <option value="todo">⏳ Da fare</option>
+              <option value="in_progress">⚡ In corso</option>
+              <option value="completed">✅ Completata</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="taskDescription">Descrizione Memo</label>
+          <textarea id="taskDescription" rows="3" placeholder="Dettagli della task, checklist o annotazioni..."></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-tertiary modal-close" data-close="taskModal">Annulla</button>
+          <button type="button" id="deleteTaskBtn" class="btn btn-danger hidden">Elimina</button>
+          <button type="submit" class="btn btn-primary">Salva Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Autenticazione Account (Login / Registrati) -->
+  <div id="authModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="authModalTitle">Accedi a Chronos</h3>
+        <button class="btn-icon modal-close" data-close="authModal">&times;</button>
+      </div>
+      <div class="modal-form">
+        <!-- Auth Tabs -->
+        <div class="drawer-tabs" style="margin-bottom: 12px;">
+          <button id="tabAuthLogin" class="tab-sub active">Accedi</button>
+          <button id="tabAuthRegister" class="tab-sub">Registrati</button>
+        </div>
+
+        <!-- Form Login -->
+        <form id="loginForm" class="auth-form-sub">
+          <div class="form-group">
+            <label for="loginUsername">Nome Utente *</label>
+            <input type="text" id="loginUsername" placeholder="Es. matteo" required>
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">Password *</label>
+            <input type="password" id="loginPassword" placeholder="••••••••" required>
+          </div>
+          <div id="loginErrorMsg" class="help-text overdue hidden" style="color: #ff4757; font-weight: 600;"></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-tertiary modal-close" data-close="authModal">Annulla</button>
+            <button type="submit" class="btn btn-primary">Accedi</button>
+          </div>
+        </form>
+
+        <!-- Form Registrazione -->
+        <form id="registerForm" class="auth-form-sub hidden">
+          <div class="form-group">
+            <label for="regUsername">Scegli Nome Utente *</label>
+            <input type="text" id="regUsername" placeholder="Es. matteo" required>
+          </div>
+          <div class="form-group">
+            <label for="regPassword">Crea Password *</label>
+            <input type="password" id="regPassword" placeholder="••••••••" required>
+          </div>
+          <div id="regErrorMsg" class="help-text overdue hidden" style="color: #ff4757; font-weight: 600;"></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-tertiary modal-close" data-close="authModal">Annulla</button>
+            <button type="submit" class="btn btn-primary">Crea Account</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- JavaScript App Logic -->
+  <script src="js/app.js"></script>
+</body>
+</html>

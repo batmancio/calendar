@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: chronos-calendar-memo
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: REDIS_URL
+        sync: false
