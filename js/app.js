@@ -865,12 +865,9 @@
       const dayEvents = AppState.events.filter(e => {
         const eventStart = e.date;
         const eventEnd = e.dateEnd || e.date;
-        const cellDate = new Date(cellDateStr);
-        const startDate = new Date(eventStart);
-        const endDate = new Date(eventEnd);
 
         // Check if event spans across this day (multi-day or single-day)
-        if (cellDate < startDate || cellDate > endDate) return false;
+        if (cellDateStr < eventStart || cellDateStr > eventEnd) return false;
 
         if (AppState.filterCategory !== 'all' && e.category !== AppState.filterCategory) return false;
         if (AppState.searchQuery.trim()) {
@@ -884,10 +881,19 @@
 
       dayEvents.forEach(evt => {
         const evtEl = document.createElement('div');
+        const info = getMultiDayInfo(evt, cellDateStr, i);
         const catClass = evt.category ? `cat-${evt.category}` : 'cat-lavoro';
-        evtEl.className = `cell-item event-item ${catClass}`;
+        evtEl.className = `cell-item event-item ${catClass} ${info.classes}`;
+        evtEl.dataset.eventId = evt.id;
+
         const timeFormatted = evt.timeStart ? formatTimeItalian(evt.timeStart) : '';
-        evtEl.innerHTML = `<span style="font-size:0.68rem; opacity:0.8; margin-right:3px;">${timeFormatted}</span> ${escapeHtml(evt.title)}`;
+        const timeDisplay = timeFormatted ? `<span style="font-size:0.68rem; opacity:0.8; margin-right:3px;">${timeFormatted}</span>` : '';
+
+        evtEl.innerHTML = `${info.prefix}${info.dayBadge}${timeDisplay}${escapeHtml(evt.title)}${info.suffix}`;
+
+        evtEl.addEventListener('mouseenter', () => highlightEventSync(evt.id, true));
+        evtEl.addEventListener('mouseleave', () => highlightEventSync(evt.id, false));
+
         evtEl.addEventListener('click', (e) => {
           e.stopPropagation();
           openEventModal(evt);
@@ -1609,6 +1615,61 @@
     }
   }
 
+  function getMultiDayInfo(evt, cellDateStr, cellIndex) {
+    const startDateStr = evt.date;
+    const endDateStr = evt.dateEnd || evt.date;
+    const isMultiDay = endDateStr !== startDateStr;
+    if (!isMultiDay) {
+      return { isMultiDay: false, classes: '', prefix: '', suffix: '', dayBadge: '' };
+    }
+
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
+    const cellDate = new Date(cellDateStr);
+
+    const totalTime = endDate.getTime() - startDate.getTime();
+    const totalDays = Math.round(totalTime / (1000 * 3600 * 24)) + 1;
+
+    const currentTime = cellDate.getTime() - startDate.getTime();
+    const currentDayIndex = Math.round(currentTime / (1000 * 3600 * 24)) + 1;
+
+    const isFirstDay = cellDateStr === startDateStr;
+    const isLastDay = cellDateStr === endDateStr;
+
+    const isRowStart = cellIndex % 7 === 0;
+    const isRowEnd = cellIndex % 7 === 6;
+
+    let classes = 'multi-day-item';
+    if (isFirstDay) classes += ' multi-day-start';
+    else if (isLastDay) classes += ' multi-day-end';
+    else classes += ' multi-day-middle';
+
+    let prefix = '';
+    let suffix = '';
+
+    if (!isFirstDay && isRowStart) {
+      classes += ' multi-day-continue-left';
+      prefix = '<span class="multi-day-arrow">◀</span>';
+    }
+    if (!isLastDay && isRowEnd) {
+      classes += ' multi-day-continue-right';
+      suffix = '<span class="multi-day-arrow">▶</span>';
+    }
+
+    const dayBadge = `<small style="font-size:0.65rem; opacity:0.85; margin-right:3px; font-weight:600;">${currentDayIndex}/${totalDays}</small>`;
+
+    return { isMultiDay: true, classes, prefix, suffix, dayBadge };
+  }
+
+  function highlightEventSync(eventId, enable) {
+    if (!eventId) return;
+    const elements = document.querySelectorAll(`[data-event-id="${eventId}"]`);
+    elements.forEach(el => {
+      if (enable) el.classList.add('event-highlight-sync');
+      else el.classList.remove('event-highlight-sync');
+    });
+  }
+
   function openEventModal(initialData = {}) {
     const modalTitle = document.getElementById('eventModalTitle');
     const eventIdInput = document.getElementById('eventId');
@@ -1622,8 +1683,12 @@
     const descInput = document.getElementById('eventDescription');
     const deleteBtn = document.getElementById('deleteEventBtn');
     const eventCustomGroup = document.getElementById('eventCustomCategoryGroup');
+    const eventCustomInput = document.getElementById('eventCustomCategoryInput');
 
     syncCustomCategoriesToSelects();
+
+    const cat = initialData.category || 'lavoro';
+    const isStandard = ['lavoro', 'personale', 'studio', 'salute', 'finanza', 'altro'].includes(cat);
 
     if (initialData.id) {
       modalTitle.textContent = 'Modifica Evento';
@@ -1633,7 +1698,6 @@
       dateEndInput.value = initialData.dateEnd || initialData.date || formatDateKey(new Date());
       timeStartInput.value = initialData.timeStart || '09:00';
       timeEndInput.value = initialData.timeEnd || '10:00';
-      categoryInput.value = initialData.category || 'lavoro';
       recurrenceInput.value = initialData.recurrence || 'none';
       descInput.value = initialData.description || '';
       deleteBtn.classList.remove('hidden');
@@ -1646,13 +1710,20 @@
       dateEndInput.value = defaultDate;
       timeStartInput.value = '09:00';
       timeEndInput.value = '10:00';
-      categoryInput.value = 'lavoro';
       recurrenceInput.value = 'none';
       descInput.value = '';
       deleteBtn.classList.add('hidden');
     }
 
-    if (eventCustomGroup) eventCustomGroup.classList.add('hidden');
+    if (!isStandard) {
+      categoryInput.value = 'custom';
+      if (eventCustomGroup) eventCustomGroup.classList.remove('hidden');
+      if (eventCustomInput) eventCustomInput.value = cat;
+    } else {
+      categoryInput.value = cat;
+      if (eventCustomGroup) eventCustomGroup.classList.add('hidden');
+      if (eventCustomInput) eventCustomInput.value = '';
+    }
 
     openModal('eventModal');
   }
@@ -1751,15 +1822,18 @@
     const descInput = document.getElementById('taskDescription');
     const deleteBtn = document.getElementById('deleteTaskBtn');
     const taskCustomGroup = document.getElementById('taskCustomCategoryGroup');
+    const taskCustomInput = document.getElementById('taskCustomCategoryInput');
 
     syncCustomCategoriesToSelects();
+
+    const cat = initialData.category || 'altro';
+    const isStandard = ['lavoro', 'personale', 'studio', 'salute', 'finanza', 'altro'].includes(cat);
 
     if (initialData.id) {
       modalTitle.textContent = 'Modifica Memo';
       taskIdInput.value = initialData.id;
       titleInput.value = initialData.title || '';
       urgencyInput.value = initialData.urgency || 'medium';
-      categoryInput.value = initialData.category || 'altro';
       dueDateInput.value = initialData.dueDate || '';
       statusInput.value = initialData.status || 'todo';
       descInput.value = initialData.description || '';
@@ -1769,14 +1843,21 @@
       taskIdInput.value = '';
       titleInput.value = '';
       urgencyInput.value = initialData.urgency || 'medium';
-      categoryInput.value = 'altro';
       dueDateInput.value = initialData.dueDate || '';
       statusInput.value = 'todo';
       descInput.value = '';
       deleteBtn.classList.add('hidden');
     }
 
-    if (taskCustomGroup) taskCustomGroup.classList.add('hidden');
+    if (!isStandard) {
+      categoryInput.value = 'custom';
+      if (taskCustomGroup) taskCustomGroup.classList.remove('hidden');
+      if (taskCustomInput) taskCustomInput.value = cat;
+    } else {
+      categoryInput.value = cat;
+      if (taskCustomGroup) taskCustomGroup.classList.add('hidden');
+      if (taskCustomInput) taskCustomInput.value = '';
+    }
 
     openModal('taskModal');
   }
