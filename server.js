@@ -118,6 +118,37 @@ async function setDbItem(key, value) {
   }
 }
 
+async function deleteDbItem(key) {
+  delete memoryDb[key];
+  saveDiskBackup();
+
+  if (isRedisConnected && redisClient) {
+    try {
+      await redisClient.del(key);
+    } catch (e) {}
+  }
+}
+
+// Helpers Gestione Indice Utenti
+async function getUsersIndex() {
+  const indexRaw = await getDbItem('users_index');
+  return indexRaw ? JSON.parse(indexRaw) : [];
+}
+
+async function addUserToIndex(username) {
+  const index = await getUsersIndex();
+  if (!index.includes(username)) {
+    index.push(username);
+    await setDbItem('users_index', JSON.stringify(index));
+  }
+}
+
+async function removeUserFromIndex(username) {
+  let index = await getUsersIndex();
+  index = index.filter(u => u !== username);
+  await setDbItem('users_index', JSON.stringify(index));
+}
+
 function hashPassword(password) {
   return crypto.createHash('sha256').update(password + JWT_SECRET).digest('hex');
 }
@@ -137,7 +168,7 @@ function verifyToken(token) {
   return null;
 }
 
-function authenticateToken(req, res, next) {
+async function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -146,39 +177,60 @@ function authenticateToken(req, res, next) {
   const username = verifyToken(token);
   if (!username) return res.status(403).json({ error: 'Token non valido o scaduto' });
 
+  const userDataRaw = await getDbItem(`user:${username}:auth`);
+  if (!userDataRaw) return res.status(403).json({ error: 'Utente non trovato' });
+
+  const userData = JSON.parse(userDataRaw);
   req.username = username;
+  req.user = {
+    username: userData.username,
+    displayName: userData.displayName || userData.username,
+    role: userData.role || 'client'
+  };
   next();
 }
+
+function authenticateAdmin(req, res, next) {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Accesso riservato unicamente all\'Amministratore.' });
+  }
+  next();
+}
+
+// Inizializzazione Utente Admin Predefinito
+async function ensureAdminUser() {
+  const adminKey = 'user:admin:auth';
+  const adminRaw = await getDbItem(adminKey);
+
+  if (!adminRaw) {
+    const adminObj = {
+      username: 'admin',
+      displayName: 'Amministratore (Matteo)',
+      role: 'admin',
+      passwordHash: hashPassword('admin123'),
+      createdAt: new Date().toISOString()
+    };
+    await setDbItem(adminKey, JSON.stringify(adminObj));
+    await addUserToIndex('admin');
+    console.log('👑 Account Admin predefinito inizializzato (Username: admin | Password: admin123)');
+  } else {
+    // Assicura che l'indice contenga l'admin
+    await addUserToIndex('admin');
+  }
+}
+
+// Chiama l'inizializzazione dell'admin
+setTimeout(ensureAdminUser, 500);
 
 // ==========================================
 // 2. ENDPOINTS API AUTENTICAZIONE
 // ==========================================
 
-app.post('/api/auth/register', async (req, res) => {
-  const { username, password } = req.body;
-
-  if (!username || !password || username.trim().length < 3 || password.length < 4) {
-    return res.status(400).json({ error: 'Username (min 3 caratteri) e Password (min 4 caratteri) obbligatori.' });
-  }
-
-  const cleanUsername = username.trim().toLowerCase();
-  const userKey = `user:${cleanUsername}:auth`;
-
-  const existingUser = await getDbItem(userKey);
-  if (existingUser) {
-    return res.status(400).json({ error: 'Username già in uso. Scegli un altro nome utente o effettua il Login.' });
-  }
-
-  const userObj = {
-    username: cleanUsername,
-    passwordHash: hashPassword(password),
-    createdAt: new Date().toISOString()
-  };
-
-  await setDbItem(userKey, JSON.stringify(userObj));
-  const token = generateToken(cleanUsername);
-
-  res.json({ success: true, username: cleanUsername, token });
+app.get('/api/auth/me', authenticateToken, (req, res) => {
+  res.json({
+    success: true,
+    user: req.user
+  });
 });
 
 app.post('/api/auth/login', async (req, res) => {
@@ -202,11 +254,131 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   const token = generateToken(cleanUsername);
-  res.json({ success: true, username: cleanUsername, token });
+  const userRole = userData.role || (cleanUsername === 'admin' ? 'admin' : 'client');
+  const displayName = userData.displayName || cleanUsername;
+
+  res.json({
+    success: true,
+    username: cleanUsername,
+    displayName,
+    role: userRole,
+    token
+  });
 });
 
 // ==========================================
-// 3. ENDPOINTS API SINCRONIZZAZIONE
+// 3. ENDPOINTS API AMMINISTRAZIONE (PANNELLO ADMIN)
+// ==========================================
+
+// Elenco di tutti i clienti / utenti (Solo Admin)
+app.get('/api/admin/users', authenticateToken, authenticateAdmin, async (req, res) => {
+  try {
+    const userList = await getUsersIndex();
+    const result = [];
+
+    for (const uname of userList) {
+      const userRaw = await getDbItem(`user:${uname}:auth`);
+      if (userRaw) {
+        const u = JSON.parse(userRaw);
+        
+        // Statistiche rapide memo/eventi
+        const eventsRaw = await getDbItem(`user:${uname}:events`);
+        const tasksRaw = await getDbItem(`user:${uname}:tasks`);
+        const eventsCount = eventsRaw ? JSON.parse(eventsRaw).length : 0;
+        const tasksCount = tasksRaw ? JSON.parse(tasksRaw).length : 0;
+
+        result.push({
+          username: u.username,
+          displayName: u.displayName || u.username,
+          role: u.role || 'client',
+          createdAt: u.createdAt || 'N/D',
+          eventsCount,
+          tasksCount
+        });
+      }
+    }
+
+    res.json({ success: true, users: result });
+  } catch (e) {
+    res.status(500).json({ error: 'Errore durante il recupero degli utenti: ' + e.message });
+  }
+});
+
+// Creazione di un nuovo account cliente (Solo Admin)
+app.post('/api/admin/users', authenticateToken, authenticateAdmin, async (req, res) => {
+  const { username, password, displayName, role } = req.body;
+
+  if (!username || !password || username.trim().length < 3 || password.length < 4) {
+    return res.status(400).json({ error: 'Username (min 3 car.) e Password (min 4 car.) obbligatori.' });
+  }
+
+  const cleanUsername = username.trim().toLowerCase();
+  const userKey = `user:${cleanUsername}:auth`;
+
+  const existingUser = await getDbItem(userKey);
+  if (existingUser) {
+    return res.status(400).json({ error: `L'utente '${cleanUsername}' esiste già.` });
+  }
+
+  const newUser = {
+    username: cleanUsername,
+    displayName: (displayName && displayName.trim()) ? displayName.trim() : cleanUsername,
+    role: role === 'admin' ? 'admin' : 'client',
+    passwordHash: hashPassword(password),
+    createdAt: new Date().toISOString()
+  };
+
+  await setDbItem(userKey, JSON.stringify(newUser));
+  await addUserToIndex(cleanUsername);
+
+  res.json({ success: true, user: { username: newUser.username, displayName: newUser.displayName, role: newUser.role } });
+});
+
+// Reset Password Cliente (Solo Admin)
+app.put('/api/admin/users/:username/password', authenticateToken, authenticateAdmin, async (req, res) => {
+  const targetUsername = req.params.username.toLowerCase();
+  const { newPassword } = req.body;
+
+  if (!newPassword || newPassword.length < 4) {
+    return res.status(400).json({ error: 'La nuova password deve contenere almeno 4 caratteri.' });
+  }
+
+  const userKey = `user:${targetUsername}:auth`;
+  const userRaw = await getDbItem(userKey);
+
+  if (!userRaw) {
+    return res.status(404).json({ error: 'Utente non trovato.' });
+  }
+
+  const userObj = JSON.parse(userRaw);
+  userObj.passwordHash = hashPassword(newPassword);
+
+  await setDbItem(userKey, JSON.stringify(userObj));
+  res.json({ success: true, message: `Password per '${targetUsername}' aggiornata con successo.` });
+});
+
+// Eliminazione Account Cliente e relativi dati (Solo Admin)
+app.delete('/api/admin/users/:username', authenticateToken, authenticateAdmin, async (req, res) => {
+  const targetUsername = req.params.username.toLowerCase();
+
+  if (targetUsername === req.username) {
+    return res.status(400).json({ error: 'Non puoi eliminare il tuo stesso account Admin in uso.' });
+  }
+
+  const userKey = `user:${targetUsername}:auth`;
+  const eventsKey = `user:${targetUsername}:events`;
+  const tasksKey = `user:${targetUsername}:tasks`;
+
+  await deleteDbItem(userKey);
+  await deleteDbItem(eventsKey);
+  await deleteDbItem(tasksKey);
+  await removeUserFromIndex(targetUsername);
+
+  res.json({ success: true, message: `Account '${targetUsername}' ed i suoi dati eliminati.` });
+});
+
+// ==========================================
+// 4. ENDPOINTS API SINCRONIZZAZIONE
 // ==========================================
 
 app.get('/api/sync', authenticateToken, async (req, res) => {
@@ -244,3 +416,4 @@ app.post('/api/sync', authenticateToken, async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Chronos Cloud Server attivo sulla porta ${PORT}`);
 });
+

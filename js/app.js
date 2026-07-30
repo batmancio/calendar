@@ -10,6 +10,8 @@
   const STORAGE_KEY_TASKS = 'chronos_app_tasks_v1';
   const STORAGE_KEY_TOKEN = 'chronos_jwt_token_v1';
   const STORAGE_KEY_USER = 'chronos_username_v1';
+  const STORAGE_KEY_ROLE = 'chronos_user_role_v1';
+  const STORAGE_KEY_DISPLAY_NAME = 'chronos_user_display_name_v1';
 
   const MONTH_NAMES_IT = [
     'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -60,6 +62,8 @@
 
     token: null,
     username: null,
+    userRole: null,
+    displayName: null,
     syncIntervalId: null,
 
     listeners: [],
@@ -86,6 +90,8 @@
         const storedTasks = localStorage.getItem(STORAGE_KEY_TASKS);
         this.token = localStorage.getItem(STORAGE_KEY_TOKEN) || null;
         this.username = localStorage.getItem(STORAGE_KEY_USER) || null;
+        this.userRole = localStorage.getItem(STORAGE_KEY_ROLE) || null;
+        this.displayName = localStorage.getItem(STORAGE_KEY_DISPLAY_NAME) || null;
 
         this.events = storedEvents ? JSON.parse(storedEvents) : [];
         this.tasks = storedTasks ? JSON.parse(storedTasks) : [];
@@ -195,49 +201,108 @@
     // Autenticazione & Redis Sync
     checkAuthSession() {
       if (this.token && this.username) {
-        this.updateAuthUI(true);
-        this.pullFromRedis();
-        this.startRedisPolling();
+        // Verifica sessione lato server
+        fetch('/api/auth/me', {
+          headers: { 'Authorization': `Bearer ${this.token}` }
+        })
+          .then(res => res.ok ? res.json() : null)
+          .then(data => {
+            if (data && data.success && data.user) {
+              this.userRole = data.user.role || 'client';
+              this.displayName = data.user.displayName || data.user.username;
+              localStorage.setItem(STORAGE_KEY_ROLE, this.userRole);
+              localStorage.setItem(STORAGE_KEY_DISPLAY_NAME, this.displayName);
+              
+              this.updateAuthUI(true);
+              this.pullFromRedis();
+              this.startRedisPolling();
+            } else {
+              this.logout();
+            }
+          })
+          .catch(err => {
+            console.log('Session Check Note:', err);
+            // Se offline, permetti comunque la visualizzazione con sessione salvata
+            this.updateAuthUI(true);
+          });
       } else {
         this.updateAuthUI(false);
       }
     },
 
-    setSession(username, token) {
+    setSession(username, token, role = 'client', displayName = '') {
       this.username = username;
       this.token = token;
+      this.userRole = role || (username === 'admin' ? 'admin' : 'client');
+      this.displayName = displayName || username;
+
       localStorage.setItem(STORAGE_KEY_USER, username);
       localStorage.setItem(STORAGE_KEY_TOKEN, token);
+      localStorage.setItem(STORAGE_KEY_ROLE, this.userRole);
+      localStorage.setItem(STORAGE_KEY_DISPLAY_NAME, this.displayName);
+
       this.updateAuthUI(true);
       
       // Sincronizza subito con Redis
-      this.pushToRedis();
+      this.pullFromRedis();
       this.startRedisPolling();
-      showToast(`Benvenuto, ${username}! Account connesso a Redis.`);
+      
+      const badgeRole = this.userRole === 'admin' ? 'Amministratore 👑' : 'Cliente 👤';
+      showToast(`Benvenuto ${this.displayName}! Account ${badgeRole} attivo.`);
     },
 
     logout() {
       this.username = null;
       this.token = null;
+      this.userRole = null;
+      this.displayName = null;
+
       localStorage.removeItem(STORAGE_KEY_USER);
       localStorage.removeItem(STORAGE_KEY_TOKEN);
+      localStorage.removeItem(STORAGE_KEY_ROLE);
+      localStorage.removeItem(STORAGE_KEY_DISPLAY_NAME);
+
       if (this.syncIntervalId) clearInterval(this.syncIntervalId);
       this.updateAuthUI(false);
-      showToast('Disconnessione effettuata. Modalità locale.');
+      showToast('Disconnessione effettuata.', 'danger');
     },
 
     updateAuthUI(isLoggedIn) {
+      const initialOverlay = document.getElementById('initialLoginOverlay');
       const openBtn = document.getElementById('openAuthModalBtn');
       const badge = document.getElementById('userInfoBadge');
       const label = document.getElementById('currentUsernameLabel');
+      const roleBadge = document.getElementById('userRoleBadge');
+      const openAdminBtn = document.getElementById('openAdminPanelBtn');
 
       if (isLoggedIn) {
+        if (initialOverlay) initialOverlay.classList.add('hidden');
         if (openBtn) openBtn.classList.add('hidden');
         if (badge) badge.classList.remove('hidden');
-        if (label) label.textContent = this.username;
+        if (label) label.textContent = this.displayName || this.username;
+
+        if (roleBadge) {
+          if (this.userRole === 'admin') {
+            roleBadge.textContent = '👑 Admin';
+            roleBadge.className = 'role-pill admin';
+          } else {
+            roleBadge.textContent = '👤 Cliente';
+            roleBadge.className = 'role-pill client';
+          }
+        }
+
+        if (openAdminBtn) {
+          if (this.userRole === 'admin') {
+            openAdminBtn.classList.remove('hidden');
+          } else {
+            openAdminBtn.classList.add('hidden');
+          }
+        }
       } else {
+        if (initialOverlay) initialOverlay.classList.remove('hidden');
         if (openBtn) openBtn.classList.remove('hidden');
         if (badge) badge.classList.add('hidden');
+        if (openAdminBtn) openAdminBtn.classList.add('hidden');
       }
     },
 
@@ -247,6 +312,7 @@
         if (this.token) this.pullFromRedis();
       }, 8000);
     },
+
 
     pushToRedis() {
       if (!this.token) return;
@@ -822,28 +888,43 @@
       });
     }
 
-    // Modal Autenticazione (Tabs & Form Handlers)
-    const tabAuthLogin = document.getElementById('tabAuthLogin');
-    const tabAuthRegister = document.getElementById('tabAuthRegister');
-    const loginForm = document.getElementById('loginForm');
-    const registerForm = document.getElementById('registerForm');
+    // Initial Fullscreen Login Form
+    const initialLoginForm = document.getElementById('initialLoginForm');
+    if (initialLoginForm) {
+      initialLoginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const username = document.getElementById('initialUsername').value;
+        const password = document.getElementById('initialPassword').value;
+        const errorMsg = document.getElementById('initialLoginErrorMsg');
+        if (errorMsg) errorMsg.classList.add('hidden');
 
-    if (tabAuthLogin && tabAuthRegister && loginForm && registerForm) {
-      tabAuthLogin.addEventListener('click', () => {
-        tabAuthLogin.classList.add('active');
-        tabAuthRegister.classList.remove('active');
-        loginForm.classList.remove('hidden');
-        registerForm.classList.add('hidden');
-      });
-
-      tabAuthRegister.addEventListener('click', () => {
-        tabAuthRegister.classList.add('active');
-        tabAuthLogin.classList.remove('active');
-        registerForm.classList.remove('hidden');
-        loginForm.classList.add('hidden');
+        fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              AppState.setSession(data.username, data.token, data.role, data.displayName);
+            } else {
+              if (errorMsg) {
+                errorMsg.textContent = data.error || 'Credenziali non valide.';
+                errorMsg.classList.remove('hidden');
+              }
+            }
+          })
+          .catch(err => {
+            if (errorMsg) {
+              errorMsg.textContent = 'Impossibile contattare il server. Assicurati che "node server.js" sia attivo.';
+              errorMsg.classList.remove('hidden');
+            }
+          });
       });
     }
 
+    // Modal Autenticazione (Tabs & Form Handlers)
+    const loginForm = document.getElementById('loginForm');
     if (loginForm) {
       loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -860,7 +941,7 @@
           .then(res => res.json())
           .then(data => {
             if (data.success) {
-              AppState.setSession(data.username, data.token);
+              AppState.setSession(data.username, data.token, data.role, data.displayName);
               closeModal('authModal');
             } else {
               if (errorMsg) {
@@ -878,39 +959,178 @@
       });
     }
 
-    if (registerForm) {
-      registerForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const username = document.getElementById('regUsername').value;
-        const password = document.getElementById('regPassword').value;
-        const errorMsg = document.getElementById('regErrorMsg');
-        if (errorMsg) errorMsg.classList.add('hidden');
+    // Pannello Admin Event Handlers
+    const openAdminPanelBtn = document.getElementById('openAdminPanelBtn');
+    if (openAdminPanelBtn) {
+      openAdminPanelBtn.addEventListener('click', () => {
+        openModal('adminModal');
+        fetchAdminUsers();
+      });
+    }
 
-        fetch('/api/auth/register', {
+    const refreshAdminUsersBtn = document.getElementById('refreshAdminUsersBtn');
+    if (refreshAdminUsersBtn) {
+      refreshAdminUsersBtn.addEventListener('click', () => {
+        fetchAdminUsers();
+      });
+    }
+
+    const adminCreateUserForm = document.getElementById('adminCreateUserForm');
+    if (adminCreateUserForm) {
+      adminCreateUserForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const username = document.getElementById('adminNewUsername').value;
+        const displayName = document.getElementById('adminNewDisplayName').value;
+        const password = document.getElementById('adminNewPassword').value;
+        const role = document.getElementById('adminNewRole').value;
+        const msgEl = document.getElementById('adminCreateUserMsg');
+
+        fetch('/api/admin/users', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password })
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${AppState.token}`
+          },
+          body: JSON.stringify({ username, password, displayName, role })
         })
           .then(res => res.json())
           .then(data => {
             if (data.success) {
-              AppState.setSession(data.username, data.token);
-              closeModal('authModal');
+              showToast(`Account per '${data.user.displayName}' creato con successo!`);
+              adminCreateUserForm.reset();
+              if (msgEl) msgEl.classList.add('hidden');
+              fetchAdminUsers();
             } else {
-              if (errorMsg) {
-                errorMsg.textContent = data.error || 'Errore nella registrazione.';
-                errorMsg.classList.remove('hidden');
+              if (msgEl) {
+                msgEl.textContent = data.error || 'Errore nella creazione utente.';
+                msgEl.style.color = '#ff4757';
+                msgEl.classList.remove('hidden');
               }
             }
           })
           .catch(err => {
-            if (errorMsg) {
-              errorMsg.textContent = 'Impossibile contattare il server. Avvia "node server.js".';
-              errorMsg.classList.remove('hidden');
+            if (msgEl) {
+              msgEl.textContent = 'Errore di connessione al server.';
+              msgEl.style.color = '#ff4757';
+              msgEl.classList.remove('hidden');
             }
           });
       });
     }
+  }
+
+  function fetchAdminUsers() {
+    const tbody = document.getElementById('adminUserListTbody');
+    if (!tbody || !AppState.token || AppState.userRole !== 'admin') return;
+
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 16px;">Caricamento utenti in corso...</td></tr>`;
+
+    fetch('/api/admin/users', {
+      headers: { 'Authorization': `Bearer ${AppState.token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.users)) {
+          tbody.innerHTML = '';
+          if (data.users.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 16px;">Nessun utente trovato.</td></tr>`;
+            return;
+          }
+
+          data.users.forEach(u => {
+            const tr = document.createElement('tr');
+            const roleBadgeHtml = u.role === 'admin' 
+              ? `<span class="role-pill admin">👑 Admin</span>` 
+              : `<span class="role-pill client">👤 Cliente</span>`;
+
+            tr.innerHTML = `
+              <td><strong>${escapeHtml(u.username)}</strong></td>
+              <td>${escapeHtml(u.displayName || u.username)}</td>
+              <td>${roleBadgeHtml}</td>
+              <td>📅 ${u.eventsCount} event. / 📌 ${u.tasksCount} memo</td>
+              <td>
+                <div class="action-btn-group">
+                  <button class="btn btn-secondary-sm reset-pwd-btn" data-username="${escapeHtml(u.username)}" title="Reset Password">
+                    🔑 Reset Password
+                  </button>
+                  ${u.username !== AppState.username ? `
+                    <button class="btn btn-danger-sm delete-user-btn" data-username="${escapeHtml(u.username)}" title="Elimina Utente">
+                      🗑️ Eliminazione
+                    </button>
+                  ` : `<span style="font-size: 0.75rem; color: var(--text-dim);">(In uso)</span>`}
+                </div>
+              </td>
+            `;
+
+            const resetBtn = tr.querySelector('.reset-pwd-btn');
+            if (resetBtn) {
+              resetBtn.addEventListener('click', () => resetClientPassword(u.username));
+            }
+
+            const deleteBtn = tr.querySelector('.delete-user-btn');
+            if (deleteBtn) {
+              deleteBtn.addEventListener('click', () => deleteClientAccount(u.username));
+            }
+
+            tbody.appendChild(tr);
+          });
+        }
+      })
+      .catch(err => {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #ff4757; padding: 16px;">Errore caricamento utenti: ${err.message}</td></tr>`;
+      });
+  }
+
+  function resetClientPassword(username) {
+    const newPwd = prompt(`Inserisci la NUOVA PASSWORD per il cliente '${username}':`);
+    if (!newPwd) return;
+    if (newPwd.length < 4) {
+      alert('La password deve contenere almeno 4 caratteri.');
+      return;
+    }
+
+    fetch(`/api/admin/users/${username}/password`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${AppState.token}`
+      },
+      body: JSON.stringify({ newPassword: newPwd })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          showToast(`Password per '${username}' aggiornata con successo!`);
+        } else {
+          alert('Errore: ' + (data.error || 'Impossibile aggiornare la password.'));
+        }
+      })
+      .catch(err => alert('Errore di connessione: ' + err.message));
+  }
+
+  function deleteClientAccount(username) {
+    if (!confirm(`Sei SICURO di voler eliminare l'account '${username}' e TUTTI i suoi dati (eventi e memo)? Questa azione è irreversibile.`)) {
+      return;
+    }
+
+    fetch(`/api/admin/users/${username}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${AppState.token}`
+      }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          showToast(`Account '${username}' eliminato con successo!`, 'danger');
+          fetchAdminUsers();
+        } else {
+          alert('Errore: ' + (data.error || 'Impossibile eliminare l\'account.'));
+        }
+      })
+      .catch(err => alert('Errore di connessione: ' + err.message));
+  }
+
   }
 
   function openModal(modalId) {
