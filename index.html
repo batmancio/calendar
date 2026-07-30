@@ -24,7 +24,7 @@
     rel="stylesheet">
 
   <!-- CSS Styles -->
-  <link rel="stylesheet" href="style.css?v=10">
+  <link rel="stylesheet" href="style.css?v=12">
 </head>
 
 <body>
@@ -475,7 +475,7 @@
           <p>Inserisci le credenziali per accedere ai tuoi eventi e memo.</p>
         </div>
 
-        <form id="initialLoginForm" class="login-form">
+        <form id="initialLoginForm" class="login-form" onsubmit="event.preventDefault(); return false;">
           <div class="form-group">
             <label for="initialUsername">Username</label>
             <input type="text" id="initialUsername" placeholder="Es. admin o username" required autocomplete="username">
@@ -825,7 +825,8 @@
       <div class="modal-header">
         <div>
           <h3>Cambia Password</h3>
-          <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Imposta una nuova password di accesso per il tuo account.</p>
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Imposta una nuova password di
+            accesso per il tuo account.</p>
         </div>
         <button class="btn-icon modal-close" data-close="changePasswordModal">&times;</button>
       </div>
@@ -837,12 +838,14 @@
 
         <div class="form-group">
           <label for="changeNewPassword">Nuova Password (min. 4 caratteri) *</label>
-          <input type="password" id="changeNewPassword" placeholder="••••••••" required minlength="4" autocomplete="new-password">
+          <input type="password" id="changeNewPassword" placeholder="••••••••" required minlength="4"
+            autocomplete="new-password">
         </div>
 
         <div class="form-group">
           <label for="changeConfirmPassword">Conferma Nuova Password *</label>
-          <input type="password" id="changeConfirmPassword" placeholder="••••••••" required minlength="4" autocomplete="new-password">
+          <input type="password" id="changeConfirmPassword" placeholder="••••••••" required minlength="4"
+            autocomplete="new-password">
         </div>
 
         <div id="changePasswordErrorMsg" class="login-error-msg hidden"></div>
@@ -862,7 +865,7 @@
   <input type="date" id="taskDateAssignInput" class="visually-hidden-date-input" aria-hidden="true">
 
   <!-- JavaScript -->
-  <script src="js/app.js?v=10"></script>
+  <script src="js/app.js?v=12"></script>
 </body>
 
 </html>
