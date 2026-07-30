@@ -223,15 +223,100 @@ async function ensureAdminUser() {
 setTimeout(ensureAdminUser, 500);
 
 // ==========================================
-// 2. ENDPOINTS API AUTENTICAZIONE
+// 2. ENDPOINTS API AUTENTICAZIONE & PROFILO
 // ==========================================
 
-app.get('/api/auth/me', authenticateToken, (req, res) => {
+app.get('/api/auth/me', authenticateToken, async (req, res) => {
+  const userDataRaw = await getDbItem(`user:${req.username}:auth`);
+  const userData = userDataRaw ? JSON.parse(userDataRaw) : {};
   res.json({
     success: true,
-    user: req.user
+    user: {
+      ...req.user,
+      avatarDataUrl: userData.avatarDataUrl || null
+    }
   });
 });
+
+// Salvataggio Immagine Profilo Utente
+app.post('/api/user/profile-image', authenticateToken, async (req, res) => {
+  const { avatarDataUrl } = req.body;
+  const userKey = `user:${req.username}:auth`;
+  const userDataRaw = await getDbItem(userKey);
+
+  if (!userDataRaw) return res.status(404).json({ error: 'Utente non trovato' });
+
+  const userData = JSON.parse(userDataRaw);
+  userData.avatarDataUrl = avatarDataUrl || null;
+  await setDbItem(userKey, JSON.stringify(userData));
+
+  res.json({ success: true, avatarDataUrl: userData.avatarDataUrl });
+});
+
+// Invio Segnalazione Bug / Suggerimento
+app.post('/api/feedback', authenticateToken, async (req, res) => {
+  const { subject, message, type } = req.body;
+
+  if (!subject || !message) {
+    return res.status(400).json({ error: 'Titolo e messaggio sono obbligatori.' });
+  }
+
+  const feedbacksRaw = await getDbItem('feedbacks_list');
+  const feedbacks = feedbacksRaw ? JSON.parse(feedbacksRaw) : [];
+
+  const newFeedback = {
+    id: 'fb_' + Date.now(),
+    username: req.username,
+    displayName: req.user.displayName,
+    role: req.user.role,
+    subject: subject.trim(),
+    message: message.trim(),
+    type: type || 'bug',
+    createdAt: new Date().toISOString(),
+    read: false
+  };
+
+  feedbacks.unshift(newFeedback);
+  await setDbItem('feedbacks_list', JSON.stringify(feedbacks));
+
+  // Invia notifica email (Gmail / SMTP se configurato)
+  sendFeedbackEmailNotification(newFeedback);
+
+  res.json({ success: true, message: 'Segnalazione inviata con successo all\'amministratore.' });
+});
+
+async function sendFeedbackEmailNotification(feedback) {
+  const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER;
+  const smtpPass = process.env.SMTP_PASS || process.env.GMAIL_PASS;
+  const notifyEmail = process.env.NOTIFY_EMAIL || 'matteo.mancini.dev@gmail.com';
+
+  console.log(`📩 [BUG/FEEDBACK] Ricevuta segnalazione da '${feedback.username}': "${feedback.subject}"`);
+
+  if (smtpUser && smtpPass) {
+    try {
+      const nodemailer = require('nodemailer');
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: 465,
+        secure: true,
+        auth: { user: smtpUser, pass: smtpPass }
+      });
+
+      await transporter.sendMail({
+        from: `"Planner Notifiche" <${smtpUser}>`,
+        to: notifyEmail,
+        subject: `[Planner Bug/Feedback] ${feedback.type.toUpperCase()}: ${feedback.subject}`,
+        text: `Nuova segnalazione inviata da: ${feedback.displayName} (${feedback.username})\nTipo: ${feedback.type}\n\nMessaggio:\n${feedback.message}\n\nInviato il: ${feedback.createdAt}`
+      });
+      console.log(`📧 Notifica inviata via Gmail a ${notifyEmail}`);
+    } catch (e) {
+      console.warn('⚠️ Notifica SMTP/Gmail non inviata:', e.message);
+    }
+  } else {
+    console.log('ℹ️ Notifica salvata nel Pannello Admin.');
+  }
+}
 
 app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body;
@@ -375,6 +460,33 @@ app.delete('/api/admin/users/:username', authenticateToken, authenticateAdmin, a
   await removeUserFromIndex(targetUsername);
 
   res.json({ success: true, message: `Account '${targetUsername}' ed i suoi dati eliminati.` });
+});
+
+// Recupero elenco segnalazioni bug / feedback (Solo Admin)
+app.get('/api/admin/feedbacks', authenticateToken, authenticateAdmin, async (req, res) => {
+  try {
+    const feedbacksRaw = await getDbItem('feedbacks_list');
+    const feedbacks = feedbacksRaw ? JSON.parse(feedbacksRaw) : [];
+    res.json({ success: true, feedbacks });
+  } catch (e) {
+    res.status(500).json({ error: 'Errore lettura segnalazioni: ' + e.message });
+  }
+});
+
+// Eliminazione segnalazione (Solo Admin)
+app.delete('/api/admin/feedbacks/:id', authenticateToken, authenticateAdmin, async (req, res) => {
+  try {
+    const feedbackId = req.params.id;
+    const feedbacksRaw = await getDbItem('feedbacks_list');
+    let feedbacks = feedbacksRaw ? JSON.parse(feedbacksRaw) : [];
+
+    feedbacks = feedbacks.filter(f => f.id !== feedbackId);
+    await setDbItem('feedbacks_list', JSON.stringify(feedbacks));
+
+    res.json({ success: true, message: 'Segnalazione eliminata.' });
+  } catch (e) {
+    res.status(500).json({ error: 'Errore eliminazione segnalazione: ' + e.message });
+  }
 });
 
 // ==========================================

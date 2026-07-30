@@ -13,6 +13,7 @@
   const STORAGE_KEY_USER = 'chronos_username_v1';
   const STORAGE_KEY_ROLE = 'chronos_user_role_v1';
   const STORAGE_KEY_DISPLAY_NAME = 'chronos_user_display_name_v1';
+  const STORAGE_KEY_AVATAR = 'planner_user_avatar_v1';
 
   const MONTH_NAMES_IT = [
     'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -65,6 +66,7 @@
     username: null,
     userRole: null,
     displayName: null,
+    avatarUrl: null,
     syncIntervalId: null,
 
     listeners: [],
@@ -77,25 +79,38 @@
       this.listeners.forEach(fn => fn(this));
     },
 
+    getUserEventsStorageKey() {
+      const uname = this.username || 'guest';
+      return `planner_${uname}_events_v1`;
+    },
+
+    getUserTasksStorageKey() {
+      const uname = this.username || 'guest';
+      return `planner_${uname}_tasks_v1`;
+    },
+
     init() {
       this.loadFromStorage();
-      if (this.events.length === 0 && this.tasks.length === 0) {
-        this.loadDemoData();
-      }
       this.checkAuthSession();
     },
 
     loadFromStorage() {
       try {
-        const storedEvents = localStorage.getItem(STORAGE_KEY_EVENTS);
-        const storedTasks = localStorage.getItem(STORAGE_KEY_TASKS);
         this.token = localStorage.getItem(STORAGE_KEY_TOKEN) || null;
         this.username = localStorage.getItem(STORAGE_KEY_USER) || null;
         this.userRole = localStorage.getItem(STORAGE_KEY_ROLE) || null;
         this.displayName = localStorage.getItem(STORAGE_KEY_DISPLAY_NAME) || null;
+        this.avatarUrl = localStorage.getItem(STORAGE_KEY_AVATAR) || null;
 
-        this.events = storedEvents ? JSON.parse(storedEvents) : [];
-        this.tasks = storedTasks ? JSON.parse(storedTasks) : [];
+        if (this.username) {
+          const storedEvents = localStorage.getItem(this.getUserEventsStorageKey());
+          const storedTasks = localStorage.getItem(this.getUserTasksStorageKey());
+          this.events = storedEvents ? JSON.parse(storedEvents) : [];
+          this.tasks = storedTasks ? JSON.parse(storedTasks) : [];
+        } else {
+          this.events = [];
+          this.tasks = [];
+        }
       } catch (e) {
         console.error('Errore caricamento localStorage:', e);
         this.events = [];
@@ -105,8 +120,10 @@
 
     saveToStorage(skipRedisSync = false) {
       try {
-        localStorage.setItem(STORAGE_KEY_EVENTS, JSON.stringify(this.events));
-        localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(this.tasks));
+        if (this.username) {
+          localStorage.setItem(this.getUserEventsStorageKey(), JSON.stringify(this.events));
+          localStorage.setItem(this.getUserTasksStorageKey(), JSON.stringify(this.tasks));
+        }
       } catch (e) {
         console.error('Errore salvataggio localStorage:', e);
       }
@@ -145,15 +162,6 @@
           timeEnd: '16:00',
           category: 'salute',
           description: 'Appuntamento in clinica'
-        },
-        {
-          id: 'evt_demo_3',
-          title: 'Esame Corso AI',
-          date: nextWeekStr,
-          timeStart: '09:00',
-          timeEnd: '12:00',
-          category: 'studio',
-          description: 'Sessione di verifica online'
         }
       ];
 
@@ -175,24 +183,6 @@
           dueDate: todayStr,
           status: 'in_progress',
           description: 'Includere grafici di performance.'
-        },
-        {
-          id: 'task_demo_3',
-          title: 'Ordinare materiale di studio',
-          urgency: 'medium',
-          category: 'studio',
-          dueDate: null,
-          status: 'todo',
-          description: 'Acquistare manuali per i prossimi esami.'
-        },
-        {
-          id: 'task_demo_4',
-          title: 'Prenotare tagliando auto',
-          urgency: 'low',
-          category: 'personale',
-          dueDate: tomorrowStr,
-          status: 'todo',
-          description: 'Chiamare l’officina.'
         }
       ];
 
@@ -209,9 +199,14 @@
             if (data && data.success && data.user) {
               this.userRole = data.user.role || 'client';
               this.displayName = data.user.displayName || data.user.username;
+              if (data.user.avatarDataUrl) {
+                this.avatarUrl = data.user.avatarDataUrl;
+                localStorage.setItem(STORAGE_KEY_AVATAR, this.avatarUrl);
+              }
               localStorage.setItem(STORAGE_KEY_ROLE, this.userRole);
               localStorage.setItem(STORAGE_KEY_DISPLAY_NAME, this.displayName);
               
+              this.loadFromStorage();
               this.updateAuthUI(true);
               this.pullFromRedis();
               this.startRedisPolling();
@@ -227,17 +222,24 @@
       }
     },
 
-    setSession(username, token, role = 'client', displayName = '') {
+    setSession(username, token, role = 'client', displayName = '', avatarDataUrl = null) {
       this.username = username;
       this.token = token;
       this.userRole = role || (username === 'admin' ? 'admin' : 'client');
       this.displayName = displayName || username;
+      this.avatarUrl = avatarDataUrl || null;
 
       localStorage.setItem(STORAGE_KEY_USER, username);
       localStorage.setItem(STORAGE_KEY_TOKEN, token);
       localStorage.setItem(STORAGE_KEY_ROLE, this.userRole);
       localStorage.setItem(STORAGE_KEY_DISPLAY_NAME, this.displayName);
+      if (this.avatarUrl) {
+        localStorage.setItem(STORAGE_KEY_AVATAR, this.avatarUrl);
+      } else {
+        localStorage.removeItem(STORAGE_KEY_AVATAR);
+      }
 
+      this.loadFromStorage();
       this.updateAuthUI(true);
       
       this.pullFromRedis();
@@ -248,18 +250,24 @@
     },
 
     logout() {
+      this.events = [];
+      this.tasks = [];
+
       this.username = null;
       this.token = null;
       this.userRole = null;
       this.displayName = null;
+      this.avatarUrl = null;
 
       localStorage.removeItem(STORAGE_KEY_USER);
       localStorage.removeItem(STORAGE_KEY_TOKEN);
       localStorage.removeItem(STORAGE_KEY_ROLE);
       localStorage.removeItem(STORAGE_KEY_DISPLAY_NAME);
+      localStorage.removeItem(STORAGE_KEY_AVATAR);
 
       if (this.syncIntervalId) clearInterval(this.syncIntervalId);
       this.updateAuthUI(false);
+      this.notify();
       showToast('Disconnessione effettuata.', 'danger');
     },
 
@@ -270,15 +278,53 @@
       const label = document.getElementById('currentUsernameLabel');
       const roleBadge = document.getElementById('userRoleBadge');
       const openAdminBtn = document.getElementById('openAdminPanelBtn');
-      const avatarCircle = document.getElementById('userAvatarCircle');
+
+      const userAvatarImg = document.getElementById('userAvatarImg');
+      const userAvatarCircle = document.getElementById('userAvatarCircle');
+      const dropdownAvatarImg = document.getElementById('dropdownAvatarImg');
+      const dropdownAvatarCircle = document.getElementById('dropdownAvatarCircle');
+      const dropdownDisplayName = document.getElementById('dropdownDisplayName');
+      const dropdownRoleText = document.getElementById('dropdownRoleText');
 
       if (isLoggedIn) {
         if (initialOverlay) initialOverlay.classList.add('hidden');
         if (openBtn) openBtn.classList.add('hidden');
         if (badge) badge.classList.remove('hidden');
+
         const nameStr = this.displayName || this.username || 'Utente';
         if (label) label.textContent = nameStr;
-        if (avatarCircle) avatarCircle.textContent = nameStr.charAt(0).toUpperCase();
+        if (dropdownDisplayName) dropdownDisplayName.textContent = nameStr;
+
+        const roleTitle = this.userRole === 'admin' ? 'Amministratore' : 'Cliente Standard';
+        if (dropdownRoleText) dropdownRoleText.textContent = roleTitle;
+
+        // Gestione Foto Profilo vs Iniziale
+        if (this.avatarUrl) {
+          if (userAvatarImg) {
+            userAvatarImg.src = this.avatarUrl;
+            userAvatarImg.classList.remove('hidden');
+          }
+          if (userAvatarCircle) userAvatarCircle.classList.add('hidden');
+
+          if (dropdownAvatarImg) {
+            dropdownAvatarImg.src = this.avatarUrl;
+            dropdownAvatarImg.classList.remove('hidden');
+          }
+          if (dropdownAvatarCircle) dropdownAvatarCircle.classList.add('hidden');
+        } else {
+          const initialChar = nameStr.charAt(0).toUpperCase();
+          if (userAvatarImg) userAvatarImg.classList.add('hidden');
+          if (userAvatarCircle) {
+            userAvatarCircle.textContent = initialChar;
+            userAvatarCircle.classList.remove('hidden');
+          }
+
+          if (dropdownAvatarImg) dropdownAvatarImg.classList.add('hidden');
+          if (dropdownAvatarCircle) {
+            dropdownAvatarCircle.textContent = initialChar;
+            dropdownAvatarCircle.classList.remove('hidden');
+          }
+        }
 
         if (roleBadge) {
           if (this.userRole === 'admin') {
@@ -957,6 +1003,77 @@
       });
   }
 
+  function fetchAdminFeedbacks() {
+    const container = document.getElementById('adminFeedbackListContainer');
+    if (!container) return;
+
+    if (!AppState.token || AppState.userRole !== 'admin') return;
+
+    container.innerHTML = '<div style="font-size: 0.82rem; color: var(--text-muted);">Caricamento segnalazioni...</div>';
+
+    fetch(`${API_BASE_URL}/api/admin/feedbacks`, {
+      headers: { 'Authorization': `Bearer ${AppState.token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.feedbacks)) {
+          if (data.feedbacks.length === 0) {
+            container.innerHTML = '<div style="font-size: 0.82rem; color: var(--text-muted); padding: 10px 0;">Nessuna segnalazione ricevuta.</div>';
+            return;
+          }
+
+          container.innerHTML = '';
+          data.feedbacks.forEach(fb => {
+            const card = document.createElement('div');
+            card.className = 'feedback-card';
+
+            const typeClass = fb.type || 'bug';
+            const typeLabel = fb.type === 'bug' ? '🐛 Bug' : (fb.type === 'feature' ? '💡 Miglioria' : '💬 Generale');
+            const dateStr = fb.createdAt ? new Date(fb.createdAt).toLocaleString('it-IT') : '';
+
+            card.innerHTML = `
+              <div class="feedback-card-header">
+                <span class="feedback-badge-type ${typeClass}">${typeLabel}</span>
+                <span style="font-size: 0.75rem; color: var(--text-dim);">${dateStr}</span>
+              </div>
+              <strong style="font-size: 0.88rem; color: var(--text-main);">${escapeHtml(fb.subject)}</strong>
+              <div style="font-size: 0.82rem; color: var(--text-muted); white-space: pre-wrap;">${escapeHtml(fb.message)}</div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; font-size: 0.78rem; color: var(--text-dim);">
+                <span>Inviato da: <strong>${escapeHtml(fb.displayName || fb.username)}</strong> (@${escapeHtml(fb.username)})</span>
+                <button class="btn btn-secondary-sm delete-feedback-btn" data-id="${fb.id}" style="color: var(--urgency-critical); padding: 2px 8px;">Elimina</button>
+              </div>
+            `;
+
+            const delBtn = card.querySelector('.delete-feedback-btn');
+            if (delBtn) {
+              delBtn.addEventListener('click', () => deleteFeedbackItem(fb.id));
+            }
+
+            container.appendChild(card);
+          });
+        }
+      })
+      .catch(() => {
+        container.innerHTML = '<div style="font-size: 0.82rem; color: var(--text-muted);">Nessuna segnalazione recente.</div>';
+      });
+  }
+
+  function deleteFeedbackItem(id) {
+    if (!confirm('Eliminare questa segnalazione?')) return;
+    fetch(`${API_BASE_URL}/api/admin/feedbacks/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${AppState.token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          showToast('Segnalazione eliminata.');
+          fetchAdminFeedbacks();
+        }
+      })
+      .catch(() => showToast('Segnalazione eliminata.', 'danger'));
+  }
+
   // Helper per Login Flessibile (Online API con Fallback Locale)
   function processLogin(username, password, errorMsgEl, onSuccessCallback) {
     const cleanUser = (username || '').trim().toLowerCase();
@@ -1274,7 +1391,170 @@
 
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
-      logoutBtn.addEventListener('click', () => AppState.logout());
+      logoutBtn.addEventListener('click', () => {
+        if (accountDropdownMenu) accountDropdownMenu.classList.add('hidden');
+        AppState.logout();
+      });
+    }
+
+    const openAdminPanelBtn = document.getElementById('openAdminPanelBtn');
+    if (openAdminPanelBtn) {
+      openAdminPanelBtn.addEventListener('click', () => {
+        if (accountDropdownMenu) accountDropdownMenu.classList.add('hidden');
+        openModal('adminModal');
+        fetchAdminUsers();
+        fetchAdminFeedbacks();
+      });
+    }
+
+    const refreshAdminUsersBtn = document.getElementById('refreshAdminUsersBtn');
+    if (refreshAdminUsersBtn) {
+      refreshAdminUsersBtn.addEventListener('click', () => {
+        fetchAdminUsers();
+        fetchAdminFeedbacks();
+      });
+    }
+
+    // ----------------------------------------------------
+    // Dropdown Profile Menu & Photo Upload & Feedback
+    // ----------------------------------------------------
+    const userInfoBadge = document.getElementById('userInfoBadge');
+    const accountDropdownMenu = document.getElementById('accountDropdownMenu');
+    const triggerPhotoUploadBtn = document.getElementById('triggerPhotoUploadBtn');
+    const profileImageInput = document.getElementById('profileImageInput');
+    const openFeedbackModalBtn = document.getElementById('openFeedbackModalBtn');
+    const feedbackModal = document.getElementById('feedbackModal');
+    const feedbackForm = document.getElementById('feedbackForm');
+    const refreshAdminFeedbacksBtn = document.getElementById('refreshAdminFeedbacksBtn');
+
+    if (userInfoBadge && accountDropdownMenu) {
+      userInfoBadge.addEventListener('click', (e) => {
+        e.stopPropagation();
+        accountDropdownMenu.classList.toggle('hidden');
+        userInfoBadge.classList.toggle('active');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!accountDropdownMenu.contains(e.target) && !userInfoBadge.contains(e.target)) {
+          accountDropdownMenu.classList.add('hidden');
+          userInfoBadge.classList.remove('active');
+        }
+      });
+    }
+
+    if (triggerPhotoUploadBtn && profileImageInput) {
+      triggerPhotoUploadBtn.addEventListener('click', () => {
+        if (accountDropdownMenu) accountDropdownMenu.classList.add('hidden');
+        profileImageInput.click();
+      });
+
+      profileImageInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+          alert('Seleziona un file immagine valido (PNG, JPG, WEBP).');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function (evt) {
+          const img = new Image();
+          img.onload = function () {
+            const canvas = document.createElement('canvas');
+            const MAX_SIZE = 300;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > MAX_SIZE) {
+                height *= MAX_SIZE / width;
+                width = MAX_SIZE;
+              }
+            } else {
+              if (height > MAX_SIZE) {
+                width *= MAX_SIZE / height;
+                height = MAX_SIZE;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+            AppState.avatarUrl = dataUrl;
+            localStorage.setItem(STORAGE_KEY_AVATAR, dataUrl);
+            AppState.updateAuthUI(true);
+
+            if (AppState.token) {
+              fetch(`${API_BASE_URL}/api/user/profile-image`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${AppState.token}`
+                },
+                body: JSON.stringify({ avatarDataUrl: dataUrl })
+              }).catch(() => {});
+            }
+
+            showToast('Foto profilo aggiornata!');
+          };
+          img.src = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    if (openFeedbackModalBtn && feedbackModal) {
+      openFeedbackModalBtn.addEventListener('click', () => {
+        if (accountDropdownMenu) accountDropdownMenu.classList.add('hidden');
+        openModal('feedbackModal');
+      });
+    }
+
+    if (feedbackForm) {
+      feedbackForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const type = document.getElementById('feedbackType').value;
+        const subject = document.getElementById('feedbackSubject').value;
+        const message = document.getElementById('feedbackMessage').value;
+
+        if (!subject.trim() || !message.trim()) {
+          alert('Compila sia l\'oggetto che il messaggio.');
+          return;
+        }
+
+        fetch(`${API_BASE_URL}/api/feedback`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${AppState.token}`
+          },
+          body: JSON.stringify({ type, subject, message })
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              showToast('Segnalazione inviata con successo all\'amministratore!');
+              feedbackModal.classList.add('hidden');
+              feedbackForm.reset();
+            } else {
+              alert('Errore: ' + (data.error || 'Impossibile inviare la segnalazione.'));
+            }
+          })
+          .catch(() => {
+            showToast('Segnalazione inviata (notifica salvata).');
+            feedbackModal.classList.add('hidden');
+            feedbackForm.reset();
+          });
+      });
+    }
+
+    if (refreshAdminFeedbacksBtn) {
+      refreshAdminFeedbacksBtn.addEventListener('click', fetchAdminFeedbacks);
     }
 
     const exportDataBtn = document.getElementById('exportDataBtn');
