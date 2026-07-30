@@ -106,6 +106,10 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
             <span class="btn-text">Agenda</span>
           </button>
+          <button id="viewMemoBtn" class="btn-tab" role="tab" aria-selected="false">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <span class="btn-text">Catalogo Memo</span>
+          </button>
         </div>
 
         <div class="action-buttons">
@@ -224,6 +228,17 @@
             <h2 id="currentMonthYearLabel" class="current-month-title">Luglio 2026</h2>
           </div>
 
+          <div class="category-quick-filters desktop-only">
+            <span class="filter-label">Filtra Categoria:</span>
+            <button class="cat-pill active" data-cat="all">Tutte</button>
+            <button class="cat-pill cat-lavoro" data-cat="lavoro">💼 Lavoro</button>
+            <button class="cat-pill cat-personale" data-cat="personale">👤 Personale</button>
+            <button class="cat-pill cat-studio" data-cat="studio">📚 Studio</button>
+            <button class="cat-pill cat-salute" data-cat="salute">🏥 Salute</button>
+            <button class="cat-pill cat-finanza" data-cat="finanza">💰 Finanza</button>
+            <button class="cat-pill cat-altro" data-cat="altro">🏷️ Altro</button>
+          </div>
+
           <div class="legend-bar desktop-only">
             <div class="legend-item"><span class="dot dot-critical"></span>Critica</div>
             <div class="legend-item"><span class="dot dot-high"></span>Alta</div>
@@ -255,6 +270,26 @@
           </div>
           <div id="agendaList" class="agenda-list">
             <!-- Agenda items -->
+          </div>
+        </div>
+
+        <!-- Catalogo Memo Dedicated View Container -->
+        <div id="memoCatalogViewContainer" class="view-container hidden">
+          <div class="catalog-header">
+            <div>
+              <h3>Catalogo Memo</h3>
+              <p class="catalog-sub">Organizzazione per urgenza, importanza e stato con azioni rapide.</p>
+            </div>
+            <div class="catalog-status-filter">
+              <button class="btn-filter-sub active" data-status-filter="all">Tutti i Memo</button>
+              <button class="btn-filter-sub" data-status-filter="undated">Solo Sospesi</button>
+              <button class="btn-filter-sub" data-status-filter="scheduled">Solo Programmati</button>
+              <button class="btn-filter-sub" data-status-filter="completed">Completati</button>
+            </div>
+          </div>
+
+          <div id="memoCatalogGrid" class="memo-catalog-grid">
+            <!-- Dynamic columns & cards rendered by JS -->
           </div>
         </div>
       </main>
@@ -356,6 +391,12 @@
           <textarea id="eventDescription" rows="3" placeholder="Dettagli dell'evento..."></textarea>
         </div>
 
+        <!-- Elementi Correlati Stessa Categoria -->
+        <div id="eventRelatedBox" class="related-items-box hidden">
+          <label class="related-title">🔗 Elementi Correlati della stessa categoria</label>
+          <div id="eventRelatedList" class="related-items-list"></div>
+        </div>
+
         <div class="modal-footer">
           <button type="button" class="btn btn-tertiary modal-close" data-close="eventModal">Annulla</button>
           <button type="button" id="deleteEventBtn" class="btn btn-danger hidden">Elimina</button>
@@ -423,6 +464,12 @@
         <div class="form-group">
           <label for="taskDescription">Descrizione</label>
           <textarea id="taskDescription" rows="3" placeholder="Dettagli del memo..."></textarea>
+        </div>
+
+        <!-- Elementi Correlati Stessa Categoria -->
+        <div id="taskRelatedBox" class="related-items-box hidden">
+          <label class="related-title">🔗 Elementi Correlati della stessa categoria</label>
+          <div id="taskRelatedList" class="related-items-list"></div>
         </div>
 
         <div class="modal-footer">

@@ -57,6 +57,7 @@
     sidebarTab: 'undated',
     filterCategory: 'all',
     filterUrgency: 'all',
+    catalogStatusFilter: 'all',
     searchQuery: '',
 
     events: [],
@@ -521,6 +522,9 @@
   // ==========================================
   // 2. CALENDAR ENGINE
   // ==========================================
+  // ==========================================
+  // 2. CALENDAR ENGINE & MEMO CATALOG ENGINE
+  // ==========================================
   function renderCalendar() {
     const currentMonthYearLabel = document.getElementById('currentMonthYearLabel');
     const calendarGrid = document.getElementById('calendarGrid');
@@ -528,6 +532,7 @@
 
     const viewMonthContainer = document.getElementById('calendarViewContainer');
     const viewAgendaContainer = document.getElementById('agendaViewContainer');
+    const viewMemoContainer = document.getElementById('memoCatalogViewContainer');
 
     const currDate = AppState.currentDate;
     const year = currDate.getFullYear();
@@ -538,13 +543,20 @@
     }
 
     if (AppState.currentView === 'month') {
-      viewMonthContainer.classList.remove('hidden');
-      viewAgendaContainer.classList.add('hidden');
+      if (viewMonthContainer) viewMonthContainer.classList.remove('hidden');
+      if (viewAgendaContainer) viewAgendaContainer.classList.add('hidden');
+      if (viewMemoContainer) viewMemoContainer.classList.add('hidden');
       renderMonthGrid(calendarGrid, year, month);
-    } else {
-      viewMonthContainer.classList.add('hidden');
-      viewAgendaContainer.classList.remove('hidden');
+    } else if (AppState.currentView === 'agenda') {
+      if (viewMonthContainer) viewMonthContainer.classList.add('hidden');
+      if (viewAgendaContainer) viewAgendaContainer.classList.remove('hidden');
+      if (viewMemoContainer) viewMemoContainer.classList.add('hidden');
       renderAgendaList(agendaList);
+    } else if (AppState.currentView === 'memo') {
+      if (viewMonthContainer) viewMonthContainer.classList.add('hidden');
+      if (viewAgendaContainer) viewAgendaContainer.classList.add('hidden');
+      if (viewMemoContainer) viewMemoContainer.classList.remove('hidden');
+      renderMemoCatalog();
     }
   }
 
@@ -636,8 +648,9 @@
 
       dayEvents.forEach(evt => {
         const evtEl = document.createElement('div');
-        evtEl.className = 'cell-item event-item';
-        evtEl.innerHTML = `<span style="font-size:0.68rem; color:var(--text-dim); margin-right:3px;">${evt.timeStart || ''}</span> ${escapeHtml(evt.title)}`;
+        const catClass = evt.category ? `cat-${evt.category}` : 'cat-lavoro';
+        evtEl.className = `cell-item event-item ${catClass}`;
+        evtEl.innerHTML = `<span style="font-size:0.68rem; opacity:0.8; margin-right:3px;">${evt.timeStart || ''}</span> ${escapeHtml(evt.title)}`;
         evtEl.addEventListener('click', (e) => {
           e.stopPropagation();
           openEventModal(evt);
@@ -658,7 +671,8 @@
 
       dayTasks.forEach(task => {
         const taskEl = document.createElement('div');
-        taskEl.className = `cell-item task-item ${task.urgency} ${task.status === 'completed' ? 'completed' : ''}`;
+        const catClass = task.category ? `cat-${task.category}` : 'cat-altro';
+        taskEl.className = `cell-item task-item ${catClass} ${task.urgency} ${task.status === 'completed' ? 'completed' : ''}`;
         taskEl.innerHTML = escapeHtml(task.title);
         taskEl.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -703,12 +717,15 @@
     const itemsByDate = {};
 
     AppState.events.forEach(evt => {
+      if (AppState.filterCategory !== 'all' && evt.category !== AppState.filterCategory) return;
       if (!itemsByDate[evt.date]) itemsByDate[evt.date] = [];
       itemsByDate[evt.date].push({ type: 'event', data: evt });
     });
 
     AppState.tasks.forEach(task => {
       if (task.dueDate) {
+        if (AppState.filterCategory !== 'all' && task.category !== AppState.filterCategory) return;
+        if (AppState.filterUrgency !== 'all' && task.urgency !== AppState.filterUrgency) return;
         if (!itemsByDate[task.dueDate]) itemsByDate[task.dueDate] = [];
         itemsByDate[task.dueDate].push({ type: 'task', data: task });
       }
@@ -738,22 +755,27 @@
 
         if (item.type === 'event') {
           const evt = item.data;
+          const catClass = evt.category ? `cat-${evt.category}` : 'cat-lavoro';
           itemCard.innerHTML = `
             <div>
               <strong style="color: var(--text-main); font-size: 0.88rem;">${escapeHtml(evt.title)}</strong>
-              <div style="font-size: 0.75rem; color: var(--text-muted);">${evt.timeStart ? evt.timeStart + ' - ' + evt.timeEnd : 'Tutto il giorno'} | ${capitalize(evt.category)}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">${evt.timeStart ? evt.timeStart + ' - ' + evt.timeEnd : 'Tutto il giorno'}</div>
             </div>
-            <span class="urgency-badge" style="background: rgba(59,130,246,0.15); color: var(--accent-primary); border: 1px solid rgba(59,130,246,0.3);">Evento</span>
+            <span class="cat-badge ${catClass}">📅 ${capitalize(evt.category || 'evento')}</span>
           `;
           itemCard.addEventListener('click', () => openEventModal(evt));
         } else {
           const task = item.data;
+          const catClass = task.category ? `cat-${task.category}` : 'cat-altro';
           itemCard.innerHTML = `
             <div>
               <strong style="color: var(--text-main); font-size: 0.88rem; ${task.status === 'completed' ? 'text-decoration: line-through; color: var(--text-dim);' : ''}">${escapeHtml(task.title)}</strong>
               <div style="font-size: 0.75rem; color: var(--text-muted);">Urgenza: ${task.urgency.toUpperCase()}</div>
             </div>
-            <span class="urgency-badge ${task.urgency}">${task.urgency}</span>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <span class="cat-badge ${catClass}">${capitalize(task.category || 'altro')}</span>
+              <span class="urgency-badge ${task.urgency}">${task.urgency}</span>
+            </div>
           `;
           itemCard.addEventListener('click', () => openTaskModal(task));
         }
@@ -764,6 +786,181 @@
       groupEl.appendChild(headerEl);
       groupEl.appendChild(itemsContainer);
       container.appendChild(groupEl);
+    });
+  }
+
+  function renderMemoCatalog() {
+    const gridEl = document.getElementById('memoCatalogGrid');
+    if (!gridEl) return;
+    gridEl.innerHTML = '';
+
+    const urgencies = [
+      { key: 'critical', title: '🚨 Critica', class: 'critical' },
+      { key: 'high', title: '⚠️ Alta', class: 'high' },
+      { key: 'medium', title: '⚡ Media', class: 'medium' },
+      { key: 'low', title: '🟢 Bassa', class: 'low' }
+    ];
+
+    urgencies.forEach(urg => {
+      const columnEl = document.createElement('div');
+      columnEl.className = `memo-column ${urg.class}`;
+
+      const tasksInUrgency = AppState.tasks.filter(t => {
+        if (t.urgency !== urg.key) return false;
+        if (AppState.filterCategory !== 'all' && t.category !== AppState.filterCategory) return false;
+        if (AppState.filterUrgency !== 'all' && t.urgency !== AppState.filterUrgency) return false;
+        if (AppState.searchQuery.trim()) {
+          const q = AppState.searchQuery.toLowerCase();
+          const matchTitle = t.title.toLowerCase().includes(q);
+          const matchDesc = (t.description || '').toLowerCase().includes(q);
+          if (!matchTitle && !matchDesc) return false;
+        }
+        if (AppState.catalogStatusFilter === 'undated' && t.dueDate) return false;
+        if (AppState.catalogStatusFilter === 'scheduled' && !t.dueDate) return false;
+        if (AppState.catalogStatusFilter === 'completed' && t.status !== 'completed') return false;
+        return true;
+      });
+
+      const colHeader = document.createElement('div');
+      colHeader.className = 'memo-column-header';
+      colHeader.innerHTML = `
+        <span class="memo-column-title">${urg.title}</span>
+        <span class="memo-column-count">${tasksInUrgency.length}</span>
+      `;
+      columnEl.appendChild(colHeader);
+
+      const cardsContainer = document.createElement('div');
+      cardsContainer.className = 'memo-cards-container';
+
+      if (tasksInUrgency.length === 0) {
+        cardsContainer.innerHTML = `<div style="font-size:0.78rem; color:var(--text-muted); text-align:center; padding: 24px 0;">Nessun memo.</div>`;
+      } else {
+        tasksInUrgency.forEach(task => {
+          const card = document.createElement('div');
+          card.className = `catalog-memo-card ${task.status === 'completed' ? 'completed' : ''}`;
+
+          const isChecked = task.status === 'completed';
+          const catClass = task.category ? `cat-${task.category}` : 'cat-altro';
+          const dateLabel = task.dueDate ? `📅 ${task.dueDate}` : '📌 Sospeso (senza data)';
+
+          card.innerHTML = `
+            <div class="catalog-card-header">
+              <div style="display:flex; gap:8px; align-items:flex-start;">
+                <input type="checkbox" class="task-checkbox" ${isChecked ? 'checked' : ''} style="margin-top:3px; cursor:pointer;" data-id="${task.id}">
+                <span class="catalog-memo-title">${escapeHtml(task.title)}</span>
+              </div>
+              <span class="cat-badge ${catClass}">${capitalize(task.category || 'altro')}</span>
+            </div>
+
+            ${task.description ? `<p class="catalog-card-desc">${escapeHtml(task.description)}</p>` : ''}
+
+            <div class="catalog-card-footer">
+              <span style="font-size:0.75rem; color:var(--text-muted);">${dateLabel}</span>
+              <div class="quick-action-btns">
+                <button class="btn-action-xs date-task-btn" title="Assegna/Cambia Data">
+                  📅
+                </button>
+                <button class="btn-action-xs edit-task-btn" title="Modifica Memo">
+                  ✏️
+                </button>
+                <button class="btn-action-xs danger delete-task-btn" title="Elimina Memo">
+                  🗑️
+                </button>
+              </div>
+            </div>
+          `;
+
+          const checkbox = card.querySelector('.task-checkbox');
+          checkbox.addEventListener('click', (e) => {
+            e.stopPropagation();
+            AppState.toggleTaskStatus(task.id);
+          });
+
+          const editBtn = card.querySelector('.edit-task-btn');
+          editBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openTaskModal(task);
+          });
+
+          const dateBtn = card.querySelector('.date-task-btn');
+          dateBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const newDate = prompt(`Inserisci nuova data (YYYY-MM-DD) per '${task.title}':`, task.dueDate || formatDateKey(new Date()));
+            if (newDate !== null) {
+              AppState.assignTaskDate(task.id, newDate.trim() || null);
+            }
+          });
+
+          const deleteBtn = card.querySelector('.delete-task-btn');
+          deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (confirm(`Eliminare il memo '${task.title}'?`)) {
+              AppState.deleteTask(task.id);
+            }
+          });
+
+          card.addEventListener('click', () => openTaskModal(task));
+
+          cardsContainer.appendChild(card);
+        });
+      }
+
+      columnEl.appendChild(cardsContainer);
+      gridEl.appendChild(columnEl);
+    });
+  }
+
+  function renderRelatedItems(category, currentId, type = 'event') {
+    const eventBox = document.getElementById('eventRelatedBox');
+    const eventList = document.getElementById('eventRelatedList');
+    const taskBox = document.getElementById('taskRelatedBox');
+    const taskList = document.getElementById('taskRelatedList');
+
+    const targetBox = type === 'event' ? eventBox : taskBox;
+    const targetList = type === 'event' ? eventList : taskList;
+
+    if (!targetBox || !targetList) return;
+    targetList.innerHTML = '';
+
+    if (!category) {
+      targetBox.classList.add('hidden');
+      return;
+    }
+
+    const relatedEvents = AppState.events.filter(e => e.category === category && e.id !== currentId);
+    const relatedTasks = AppState.tasks.filter(t => t.category === category && t.id !== currentId);
+
+    const totalRelated = relatedEvents.length + relatedTasks.length;
+
+    if (totalRelated === 0) {
+      targetBox.classList.add('hidden');
+      return;
+    }
+
+    targetBox.classList.remove('hidden');
+
+    relatedEvents.forEach(evt => {
+      const chip = document.createElement('span');
+      chip.className = `related-item-chip cat-${evt.category}`;
+      chip.innerHTML = `📅 Evento: ${escapeHtml(evt.title)}`;
+      chip.addEventListener('click', () => {
+        if (type === 'event') closeModal('eventModal');
+        else closeModal('taskModal');
+        openEventModal(evt);
+      });
+      targetList.appendChild(chip);
+    });
+
+    relatedTasks.forEach(task => {
+      const chip = document.createElement('span');
+      chip.className = `related-item-chip cat-${task.category}`;
+      chip.innerHTML = `📌 Memo: ${escapeHtml(task.title)}`;
+      chip.addEventListener('click', () => {
+        if (type === 'event') closeModal('eventModal');
+        else closeModal('taskModal');
+        openTaskModal(task);
+      });
+      targetList.appendChild(chip);
     });
   }
 
@@ -1167,6 +1364,13 @@
       deleteBtn.classList.add('hidden');
     }
 
+    const selectedCat = initialData.category || (initialData.id ? 'lavoro' : 'lavoro');
+    renderRelatedItems(selectedCat, initialData.id, 'event');
+
+    categoryInput.onchange = () => {
+      renderRelatedItems(categoryInput.value, initialData.id, 'event');
+    };
+
     openModal('eventModal');
   }
 
@@ -1223,6 +1427,13 @@
       descInput.value = '';
       deleteBtn.classList.add('hidden');
     }
+
+    const selectedCat = initialData.category || (initialData.id ? 'altro' : 'altro');
+    renderRelatedItems(selectedCat, initialData.id, 'task');
+
+    categoryInput.onchange = () => {
+      renderRelatedItems(categoryInput.value, initialData.id, 'task');
+    };
 
     openModal('taskModal');
   }
@@ -1598,12 +1809,14 @@
 
     const viewMonthBtn = document.getElementById('viewMonthBtn');
     const viewAgendaBtn = document.getElementById('viewAgendaBtn');
+    const viewMemoBtn = document.getElementById('viewMemoBtn');
 
-    if (viewMonthBtn && viewAgendaBtn) {
+    if (viewMonthBtn && viewAgendaBtn && viewMemoBtn) {
       viewMonthBtn.addEventListener('click', () => {
         AppState.currentView = 'month';
         viewMonthBtn.classList.add('active');
         viewAgendaBtn.classList.remove('active');
+        viewMemoBtn.classList.remove('active');
         renderCalendar();
       });
 
@@ -1611,9 +1824,47 @@
         AppState.currentView = 'agenda';
         viewAgendaBtn.classList.add('active');
         viewMonthBtn.classList.remove('active');
+        viewMemoBtn.classList.remove('active');
+        renderCalendar();
+      });
+
+      viewMemoBtn.addEventListener('click', () => {
+        AppState.currentView = 'memo';
+        viewMemoBtn.classList.add('active');
+        viewMonthBtn.classList.remove('active');
+        viewAgendaBtn.classList.remove('active');
         renderCalendar();
       });
     }
+
+    // Quick Category Filter Pills in Header Toolbar
+    document.querySelectorAll('.cat-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+
+        const cat = pill.dataset.cat || 'all';
+        AppState.filterCategory = cat;
+
+        const selectEl = document.getElementById('filterCategory');
+        if (selectEl) selectEl.value = cat;
+
+        renderCalendar();
+        renderTasks();
+      });
+    });
+
+    // Catalog Status Filter Buttons in Dedicated Memo View
+    document.querySelectorAll('.btn-filter-sub').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.btn-filter-sub').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const statusFilter = btn.dataset.statusFilter || 'all';
+        AppState.catalogStatusFilter = statusFilter;
+        renderCalendar();
+      });
+    });
 
     const prevMonthBtn = document.getElementById('prevMonthBtn');
     const nextMonthBtn = document.getElementById('nextMonthBtn');

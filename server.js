@@ -63,7 +63,7 @@ async function initRedis() {
 
   try {
     const { createClient } = require('redis');
-    
+
     // Supporto TLS per Upstash Redis Cloud (rediss://)
     const clientOptions = {
       url: redisUrl
@@ -102,7 +102,7 @@ async function getDbItem(key) {
   if (isRedisConnected && redisClient) {
     try {
       return await redisClient.get(key);
-    } catch (e) {}
+    } catch (e) { }
   }
   return memoryDb[key] || null;
 }
@@ -114,7 +114,7 @@ async function setDbItem(key, value) {
   if (isRedisConnected && redisClient) {
     try {
       await redisClient.set(key, value);
-    } catch (e) {}
+    } catch (e) { }
   }
 }
 
@@ -125,7 +125,7 @@ async function deleteDbItem(key) {
   if (isRedisConnected && redisClient) {
     try {
       await redisClient.del(key);
-    } catch (e) {}
+    } catch (e) { }
   }
 }
 
@@ -164,7 +164,7 @@ function verifyToken(token) {
     if (payload.exp && payload.exp > Date.now()) {
       return payload.username;
     }
-  } catch (e) {}
+  } catch (e) { }
   return null;
 }
 
@@ -289,9 +289,16 @@ async function sendFeedbackEmailNotification(feedback) {
   const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
   const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER;
   const smtpPass = process.env.SMTP_PASS || process.env.GMAIL_PASS;
-  const notifyEmail = process.env.NOTIFY_EMAIL || 'matteo.mancini.dev@gmail.com';
+  const notifyEmail = process.env.NOTIFY_EMAIL || 'matteo.mancini0619@gmail.com';
 
-  console.log(`📩 [BUG/FEEDBACK] Ricevuta segnalazione da '${feedback.username}': "${feedback.subject}"`);
+  console.log(`\n🚨 =================================================`);
+  console.log(`📩 NUOVA SEGNALAZIONE BUG / SUGGERIMENTO RICEVUTA!`);
+  console.log(`👤 Da: ${feedback.displayName} (@${feedback.username}) - Ruolo: ${feedback.role}`);
+  console.log(`📌 Tipo: [${feedback.type.toUpperCase()}]`);
+  console.log(`🏷️ Oggetto: ${feedback.subject}`);
+  console.log(`💬 Messaggio: ${feedback.message}`);
+  console.log(`📅 Data: ${feedback.createdAt}`);
+  console.log(`=================================================\n`);
 
   if (smtpUser && smtpPass) {
     try {
@@ -304,17 +311,17 @@ async function sendFeedbackEmailNotification(feedback) {
       });
 
       await transporter.sendMail({
-        from: `"Planner Notifiche" <${smtpUser}>`,
+        from: `"Planner Bug Alert" <${smtpUser}>`,
         to: notifyEmail,
-        subject: `[Planner Bug/Feedback] ${feedback.type.toUpperCase()}: ${feedback.subject}`,
-        text: `Nuova segnalazione inviata da: ${feedback.displayName} (${feedback.username})\nTipo: ${feedback.type}\n\nMessaggio:\n${feedback.message}\n\nInviato il: ${feedback.createdAt}`
+        subject: `🚨 [Planner Alert] ${feedback.type.toUpperCase()}: ${feedback.subject}`,
+        text: `Ciao Matteo,\n\nHai ricevuto un nuovo messaggio/bug report da parte di ${feedback.displayName} (@${feedback.username}).\n\nTipo: ${feedback.type}\nOggetto: ${feedback.subject}\n\nMessaggio:\n${feedback.message}\n\nData invio: ${feedback.createdAt}\n\nAccedi al Pannello Admin per gestire tutte le segnalazioni.`
       });
-      console.log(`📧 Notifica inviata via Gmail a ${notifyEmail}`);
+      console.log(`📧 Email di notifica diretta inviata a: ${notifyEmail}`);
     } catch (e) {
-      console.warn('⚠️ Notifica SMTP/Gmail non inviata:', e.message);
+      console.warn('⚠️ Invio notifica email fallito (verifica credenziali SMTP):', e.message);
     }
   } else {
-    console.log('ℹ️ Notifica salvata nel Pannello Admin.');
+    console.log(`ℹ️ Segnalazione salvata nel Pannello Admin ed accessibile da @admin.`);
   }
 }
 
@@ -365,7 +372,7 @@ app.get('/api/admin/users', authenticateToken, authenticateAdmin, async (req, re
       const userRaw = await getDbItem(`user:${uname}:auth`);
       if (userRaw) {
         const u = JSON.parse(userRaw);
-        
+
         // Statistiche rapide memo/eventi
         const eventsRaw = await getDbItem(`user:${uname}:events`);
         const tasksRaw = await getDbItem(`user:${uname}:tasks`);
