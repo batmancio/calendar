@@ -863,7 +863,15 @@
       eventsContainer.className = 'cell-events-container';
 
       const dayEvents = AppState.events.filter(e => {
-        if (e.date !== cellDateStr) return false;
+        const eventStart = e.date;
+        const eventEnd = e.dateEnd || e.date;
+        const cellDate = new Date(cellDateStr);
+        const startDate = new Date(eventStart);
+        const endDate = new Date(eventEnd);
+
+        // Check if event spans across this day (multi-day or single-day)
+        if (cellDate < startDate || cellDate > endDate) return false;
+
         if (AppState.filterCategory !== 'all' && e.category !== AppState.filterCategory) return false;
         if (AppState.searchQuery.trim()) {
           const q = AppState.searchQuery.toLowerCase();
@@ -878,7 +886,9 @@
         const evtEl = document.createElement('div');
         const catClass = evt.category ? `cat-${evt.category}` : 'cat-lavoro';
         evtEl.className = `cell-item event-item ${catClass}`;
-        evtEl.innerHTML = `<span style="font-size:0.68rem; opacity:0.8; margin-right:3px;">${evt.timeStart || ''}</span> ${escapeHtml(evt.title)}`;
+        const isMultiDay = evt.dateEnd && evt.dateEnd !== evt.date;
+        const multiDayBadge = isMultiDay ? ' 📅' : '';
+        evtEl.innerHTML = `<span style="font-size:0.68rem; opacity:0.8; margin-right:3px;">${evt.timeStart || ''}</span> ${escapeHtml(evt.title)}${multiDayBadge}`;
         evtEl.addEventListener('click', (e) => {
           e.stopPropagation();
           openEventModal(evt);
@@ -1592,6 +1602,7 @@
     const eventIdInput = document.getElementById('eventId');
     const titleInput = document.getElementById('eventTitle');
     const dateInput = document.getElementById('eventDate');
+    const dateEndInput = document.getElementById('eventDateEnd');
     const timeStartInput = document.getElementById('eventTimeStart');
     const timeEndInput = document.getElementById('eventTimeEnd');
     const categoryInput = document.getElementById('eventCategory');
@@ -1603,6 +1614,7 @@
       eventIdInput.value = initialData.id;
       titleInput.value = initialData.title || '';
       dateInput.value = initialData.date || formatDateKey(new Date());
+      dateEndInput.value = initialData.dateEnd || initialData.date || formatDateKey(new Date());
       timeStartInput.value = initialData.timeStart || '09:00';
       timeEndInput.value = initialData.timeEnd || '10:00';
       categoryInput.value = initialData.category || 'lavoro';
@@ -1612,7 +1624,9 @@
       modalTitle.textContent = 'Nuovo Evento';
       eventIdInput.value = '';
       titleInput.value = '';
-      dateInput.value = initialData.date || formatDateKey(new Date());
+      const defaultDate = initialData.date || formatDateKey(new Date());
+      dateInput.value = defaultDate;
+      dateEndInput.value = defaultDate;
       timeStartInput.value = '09:00';
       timeEndInput.value = '10:00';
       categoryInput.value = 'lavoro';
@@ -1633,9 +1647,13 @@
   function handleEventSubmit(e) {
     e.preventDefault();
     const eventId = document.getElementById('eventId').value;
+    const dateStart = document.getElementById('eventDate').value;
+    const dateEnd = document.getElementById('eventDateEnd').value || dateStart;
+
     const eventData = {
       title: document.getElementById('eventTitle').value.trim(),
-      date: document.getElementById('eventDate').value,
+      date: dateStart,
+      dateEnd: dateEnd,
       timeStart: document.getElementById('eventTimeStart').value,
       timeEnd: document.getElementById('eventTimeEnd').value,
       category: document.getElementById('eventCategory').value,
@@ -2237,13 +2255,22 @@
     const installBannerBtn = document.getElementById('installBannerBtn');
     const installBannerDismissBtn = document.getElementById('installBannerDismissBtn');
 
+    let installPromptFired = false;
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredInstallPrompt = e;
+      installPromptFired = true;
       if (installBanner && !localStorage.getItem('chronos_install_dismissed_v1')) {
         installBanner.classList.remove('hidden');
       }
     });
+
+    // Fallback: show banner after 8s if beforeinstallprompt never fired (e.g., iOS/Safari)
+    setTimeout(() => {
+      if (!installPromptFired && installBanner && !localStorage.getItem('chronos_install_dismissed_v1')) {
+        installBanner.classList.remove('hidden');
+      }
+    }, 8000);
 
     if (installBannerBtn) {
       installBannerBtn.addEventListener('click', async () => {

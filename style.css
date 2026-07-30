@@ -1616,17 +1616,22 @@ body {
   /* --- Dropdown as Bottom Sheet on Mobile --- */
   .dropdown-menu {
     position: fixed;
-    top: auto;
+    top: 0;
     bottom: 0;
     left: 0;
     right: 0;
     width: 100%;
     max-width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     z-index: 160;
     animation: bottomSheetUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: 0 -8px 30px rgba(15, 23, 42, 0.15);
     padding-bottom: env(safe-area-inset-bottom, 8px);
+    margin-top: auto;
   }
 
   @keyframes bottomSheetUp {
@@ -1912,6 +1917,15 @@ body {
     right: 12px;
     transform: none;
     max-width: none;
+    z-index: 260;
+    width: auto;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .install-banner span {
+    flex: 1;
+    min-width: 200px;
   }
 
   /* --- Bottom Navigation Bar --- */
