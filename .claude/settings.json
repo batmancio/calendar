@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p \"/home/matteo-mancini/Desktop/App memo/tools\")",
+      "Bash(node tools/generate-icons.js)",
+      "Bash(file icons/*.png)"
+    ],
+    "additionalDirectories": [
+      "/home/matteo-mancini/Desktop/App memo"
+    ]
+  }
+}

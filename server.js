@@ -405,6 +405,11 @@ app.post('/api/admin/users', authenticateToken, authenticateAdmin, async (req, r
   }
 
   const cleanUsername = username.trim().toLowerCase();
+
+  if (cleanUsername === '__chronos_guest__') {
+    return res.status(400).json({ error: 'Questo username è riservato alla modalità ospite e non può essere usato.' });
+  }
+
   const userKey = `user:${cleanUsername}:auth`;
 
   const existingUser = await getDbItem(userKey);
@@ -504,19 +509,22 @@ app.get('/api/sync', authenticateToken, async (req, res) => {
   const username = req.username;
   const eventsKey = `user:${username}:events`;
   const tasksKey = `user:${username}:tasks`;
+  const tombstonesKey = `user:${username}:tombstones`;
 
   const eventsRaw = await getDbItem(eventsKey);
   const tasksRaw = await getDbItem(tasksKey);
+  const tombstonesRaw = await getDbItem(tombstonesKey);
 
   const events = eventsRaw ? JSON.parse(eventsRaw) : [];
   const tasks = tasksRaw ? JSON.parse(tasksRaw) : [];
+  const tombstones = tombstonesRaw ? JSON.parse(tombstonesRaw) : [];
 
-  res.json({ success: true, events, tasks, cloudConnected: isRedisConnected });
+  res.json({ success: true, events, tasks, tombstones, cloudConnected: isRedisConnected });
 });
 
 app.post('/api/sync', authenticateToken, async (req, res) => {
   const username = req.username;
-  const { events, tasks } = req.body;
+  const { events, tasks, tombstones } = req.body;
 
   if (!Array.isArray(events) || !Array.isArray(tasks)) {
     return res.status(400).json({ error: 'Formato dati non valido' });
@@ -524,9 +532,13 @@ app.post('/api/sync', authenticateToken, async (req, res) => {
 
   const eventsKey = `user:${username}:events`;
   const tasksKey = `user:${username}:tasks`;
+  const tombstonesKey = `user:${username}:tombstones`;
 
   await setDbItem(eventsKey, JSON.stringify(events));
   await setDbItem(tasksKey, JSON.stringify(tasks));
+  if (Array.isArray(tombstones)) {
+    await setDbItem(tombstonesKey, JSON.stringify(tombstones));
+  }
 
   res.json({ success: true, timestamp: Date.now(), cloudConnected: isRedisConnected });
 });

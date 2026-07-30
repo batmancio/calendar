@@ -1129,7 +1129,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: 180;
   padding: 16px;
 }
 
@@ -1402,6 +1402,10 @@ body {
 }
 
 .toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: 10px 16px;
   background: #ffffff;
   border: 1px solid var(--bg-card-border);
@@ -1419,9 +1423,61 @@ body {
   color: var(--urgency-critical);
 }
 
+.toast-action-btn {
+  background: none;
+  border: none;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  color: var(--accent-primary);
+  padding: 0;
+}
+
+.toast.danger .toast-action-btn {
+  color: var(--urgency-critical);
+}
+
 @keyframes toastIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.visually-hidden-date-input {
+  position: fixed;
+  top: -9999px;
+  left: -9999px;
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
+}
+
+.install-banner {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 250;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
+  border-left: 4px solid var(--accent-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 12px 16px;
+  max-width: 480px;
+  font-size: 0.85rem;
+  color: var(--text-main);
+}
+
+.install-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 /* Custom Scrollbars */
@@ -1847,6 +1903,15 @@ body {
   @keyframes toastSlideDown {
     from { opacity: 0; transform: translateY(-15px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* --- Install Banner: sopra la bottom nav su mobile --- */
+  .install-banner {
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 12px);
+    left: 12px;
+    right: 12px;
+    transform: none;
+    max-width: none;
   }
 
   /* --- Bottom Navigation Bar --- */

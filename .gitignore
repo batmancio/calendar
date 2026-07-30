@@ -1,0 +1,3 @@
+node_modules/
+chronos_db.json
+*.log

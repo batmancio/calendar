@@ -14,6 +14,15 @@
   const STORAGE_KEY_ROLE = 'chronos_user_role_v1';
   const STORAGE_KEY_DISPLAY_NAME = 'chronos_user_display_name_v1';
   const STORAGE_KEY_AVATAR = 'planner_user_avatar_v1';
+  const GUEST_USERNAME = '__chronos_guest__';
+  const STORAGE_KEY_GUEST_MODE = 'chronos_guest_mode_v1';
+  const NOTIFIED_STORAGE_KEY = 'chronos_notified_ids_v1';
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(err => console.error('Registrazione SW fallita:', err));
+    });
+  }
 
   const MONTH_NAMES_IT = [
     'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -36,16 +45,101 @@
     return str.charAt(0).toUpperCase() + str.slice(1);
   }
 
-  function showToast(msg, type = 'success') {
+  function isTypingTarget(el) {
+    if (!el) return false;
+    const tag = el.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+  }
+
+  function isAnyModalOpen() {
+    return document.querySelectorAll('.modal-backdrop:not(.hidden)').length > 0;
+  }
+
+  // Trova la posizione in cui reinserire un elemento ripristinato (undo) confrontando
+  // gli id (che incorporano un timestamp di creazione), invece di affidarsi a un indice
+  // catturato al momento della cancellazione: un indice numerico diventerebbe scorretto
+  // se, durante la finestra di annullamento, l'array viene modificato da altre azioni.
+  function findInsertionIndexById(list, item) {
+    for (let i = 0; i < list.length; i++) {
+      if (list[i].id > item.id) return i;
+    }
+    return list.length;
+  }
+
+  function showToast(msg, type = 'success', options = null) {
     const container = document.getElementById('toastContainer');
     if (!container) return;
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.textContent = msg;
-    container.appendChild(toast);
-    setTimeout(() => {
-      toast.remove();
-    }, 3000);
+
+    const msgSpan = document.createElement('span');
+    msgSpan.textContent = msg;
+    toast.appendChild(msgSpan);
+
+    if (options && options.actionLabel && options.onAction) {
+      let actioned = false;
+      const actionBtn = document.createElement('button');
+      actionBtn.type = 'button';
+      actionBtn.className = 'toast-action-btn';
+      actionBtn.textContent = options.actionLabel;
+      actionBtn.addEventListener('click', () => {
+        actioned = true;
+        options.onAction();
+        toast.remove();
+      });
+      toast.appendChild(actionBtn);
+      container.appendChild(toast);
+      setTimeout(() => {
+        if (!actioned && options.onExpire) options.onExpire();
+        toast.remove();
+      }, options.duration || 5000);
+    } else {
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.remove();
+      }, 3000);
+    }
+  }
+
+  // Notifiche locali (opt-in, foreground/tab-recente): non è push in background reale.
+  function getNotifiedSet() {
+    try { return new Set(JSON.parse(localStorage.getItem(NOTIFIED_STORAGE_KEY) || '[]')); }
+    catch (e) { return new Set(); }
+  }
+
+  function markNotified(tag) {
+    const set = getNotifiedSet();
+    set.add(tag);
+    localStorage.setItem(NOTIFIED_STORAGE_KEY, JSON.stringify(Array.from(set)));
+  }
+
+  function checkAndNotify() {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const todayStr = formatDateKey(new Date());
+    const notified = getNotifiedSet();
+
+    const showNotif = (title, body, tag) => {
+      if (notified.has(tag)) return;
+      if (navigator.serviceWorker) {
+        navigator.serviceWorker.ready.then(reg => reg.showNotification(title, {
+          body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag
+        }));
+      } else {
+        new Notification(title, { body, icon: 'icons/icon-192.png' });
+      }
+      markNotified(tag);
+    };
+
+    AppState.events.filter(e => e.date === todayStr).forEach(e => {
+      showNotif('Evento di oggi', `${e.title}${e.timeStart ? ' alle ' + e.timeStart : ''}`, `event_${e.id}_${todayStr}`);
+    });
+
+    AppState.tasks
+      .filter(t => t.status !== 'completed' && t.urgency === 'critical' && t.dueDate && t.dueDate <= todayStr)
+      .forEach(t => {
+        const label = t.dueDate < todayStr ? `${t.title} (scaduto)` : `${t.title} (scade oggi)`;
+        showNotif('Memo critico', label, `task_${t.id}_${todayStr}`);
+      });
   }
 
   // ==========================================
@@ -62,6 +156,7 @@
 
     events: [],
     tasks: [],
+    tombstones: [], // { id, deletedAt } - cancellazioni persistite e sincronizzate, per propagare i delete tra dispositivi
 
     token: null,
     username: null,
@@ -69,6 +164,8 @@
     displayName: null,
     avatarUrl: null,
     syncIntervalId: null,
+    hasPendingSync: false,
+    recentlyDeletedIds: new Map(), // finestra breve in-memory per bloccare la resurrezione durante l'undo
 
     listeners: [],
 
@@ -90,6 +187,11 @@
       return `planner_${uname}_tasks_v1`;
     },
 
+    getUserTombstonesStorageKey() {
+      const uname = this.username || 'guest';
+      return `planner_${uname}_tombstones_v1`;
+    },
+
     init() {
       this.loadFromStorage();
       this.checkAuthSession();
@@ -106,17 +208,28 @@
         if (this.username) {
           const storedEvents = localStorage.getItem(this.getUserEventsStorageKey());
           const storedTasks = localStorage.getItem(this.getUserTasksStorageKey());
+          const storedTombstones = localStorage.getItem(this.getUserTombstonesStorageKey());
           this.events = storedEvents ? JSON.parse(storedEvents) : [];
           this.tasks = storedTasks ? JSON.parse(storedTasks) : [];
+          this.tombstones = storedTombstones ? JSON.parse(storedTombstones) : [];
+          this.pruneTombstones();
         } else {
           this.events = [];
           this.tasks = [];
+          this.tombstones = [];
         }
       } catch (e) {
         console.error('Errore caricamento localStorage:', e);
         this.events = [];
         this.tasks = [];
+        this.tombstones = [];
       }
+    },
+
+    // Rimuove i tombstone più vecchi di 30 giorni per non far crescere la lista all'infinito.
+    pruneTombstones() {
+      const cutoff = Date.now() - (30 * 24 * 60 * 60 * 1000);
+      this.tombstones = this.tombstones.filter(t => (t.deletedAt || 0) >= cutoff);
     },
 
     saveToStorage(skipRedisSync = false) {
@@ -124,6 +237,7 @@
         if (this.username) {
           localStorage.setItem(this.getUserEventsStorageKey(), JSON.stringify(this.events));
           localStorage.setItem(this.getUserTasksStorageKey(), JSON.stringify(this.tasks));
+          localStorage.setItem(this.getUserTombstonesStorageKey(), JSON.stringify(this.tombstones));
         }
       } catch (e) {
         console.error('Errore salvataggio localStorage:', e);
@@ -191,6 +305,15 @@
     },
 
     checkAuthSession() {
+      if (localStorage.getItem(STORAGE_KEY_GUEST_MODE) === '1') {
+        this.username = GUEST_USERNAME;
+        this.token = null;
+        this.userRole = 'client';
+        this.displayName = 'Ospite';
+        this.loadFromStorage();
+        this.updateAuthUI(true);
+        return;
+      }
       if (this.token && this.username) {
         fetch(`${API_BASE_URL}/api/auth/me`, {
           headers: { 'Authorization': `Bearer ${this.token}` }
@@ -250,6 +373,25 @@
       showToast(`Benvenuto ${this.displayName} (${badgeRole})`);
     },
 
+    enterGuestMode() {
+      this.username = GUEST_USERNAME;
+      this.token = null;
+      this.userRole = 'client';
+      this.displayName = 'Ospite';
+      this.avatarUrl = null;
+
+      localStorage.setItem(STORAGE_KEY_GUEST_MODE, '1');
+      localStorage.setItem(STORAGE_KEY_USER, GUEST_USERNAME);
+      localStorage.removeItem(STORAGE_KEY_TOKEN);
+      localStorage.setItem(STORAGE_KEY_ROLE, this.userRole);
+      localStorage.setItem(STORAGE_KEY_DISPLAY_NAME, this.displayName);
+      localStorage.removeItem(STORAGE_KEY_AVATAR);
+
+      this.loadFromStorage();
+      this.updateAuthUI(true);
+      showToast('Modalità ospite attiva: i dati restano solo su questo dispositivo.');
+    },
+
     logout() {
       this.events = [];
       this.tasks = [];
@@ -265,6 +407,7 @@
       localStorage.removeItem(STORAGE_KEY_ROLE);
       localStorage.removeItem(STORAGE_KEY_DISPLAY_NAME);
       localStorage.removeItem(STORAGE_KEY_AVATAR);
+      localStorage.removeItem(STORAGE_KEY_GUEST_MODE);
 
       if (this.syncIntervalId) clearInterval(this.syncIntervalId);
       this.updateAuthUI(false);
@@ -369,21 +512,63 @@
         },
         body: JSON.stringify({
           events: this.events,
-          tasks: this.tasks
+          tasks: this.tasks,
+          tombstones: this.tombstones
         })
-      }).catch(() => {});
+      })
+        .then(res => { if (!res.ok) throw new Error('sync failed'); this.hasPendingSync = false; })
+        .catch(() => { this.hasPendingSync = true; });
+    },
+
+    // Unisce la lista locale con quella remota tenendo per ogni id la versione con updatedAt più recente.
+    // Rispetta le cancellazioni locali ancora in sospeso (recentlyDeletedIds) per evitare che un poll
+    // "resusciti" un elemento appena eliminato dall'utente prima che la cancellazione sia stata pushata.
+    // Le cancellazioni già confermate sono invece propagate tramite i tombstone persistiti (vedi pullFromRedis).
+    mergeById(localList, remoteList) {
+      const map = new Map();
+      localList.forEach(item => map.set(item.id, item));
+      remoteList.forEach(remoteItem => {
+        if (this.recentlyDeletedIds.has(remoteItem.id)) return;
+        const localItem = map.get(remoteItem.id);
+        if (!localItem) {
+          map.set(remoteItem.id, remoteItem);
+        } else if ((remoteItem.updatedAt || 0) > (localItem.updatedAt || 0)) {
+          map.set(remoteItem.id, remoteItem);
+        }
+      });
+      return Array.from(map.values());
+    },
+
+    // Unisce i tombstone locali e remoti (unione per id) cosi' che una cancellazione fatta
+    // su un dispositivo si propaghi anche agli altri, invece di essere "resuscitata" al
+    // prossimo pull perche' l'elemento e' ancora presente nella copia locale di un altro device.
+    mergeTombstones(localTombstones, remoteTombstones) {
+      const map = new Map();
+      localTombstones.forEach(t => map.set(t.id, t));
+      remoteTombstones.forEach(t => {
+        if (!map.has(t.id)) map.set(t.id, t);
+      });
+      return Array.from(map.values());
     },
 
     pullFromRedis() {
       if (!this.token) return;
+      if (isAnyModalOpen()) return;
       fetch(`${API_BASE_URL}/api/sync`, {
         headers: { 'Authorization': `Bearer ${this.token}` }
       })
         .then(res => res.ok ? res.json() : null)
         .then(data => {
           if (data && data.success) {
-            this.events = data.events || [];
-            this.tasks = data.tasks || [];
+            this.tombstones = this.mergeTombstones(this.tombstones, data.tombstones || []);
+            const deletedIds = new Set(this.tombstones.map(t => t.id));
+
+            const mergedEvents = this.mergeById(this.events, data.events || []);
+            const mergedTasks = this.mergeById(this.tasks, data.tasks || []);
+            this.events = mergedEvents.filter(e => !deletedIds.has(e.id));
+            this.tasks = mergedTasks.filter(t => !deletedIds.has(t.id));
+
+            this.pruneTombstones();
             this.saveToStorage(true);
           }
         })
@@ -392,7 +577,7 @@
 
     // Operazioni Eventi
     addEvent(eventData) {
-      const newEvent = { id: 'evt_' + Date.now(), ...eventData };
+      const newEvent = { id: 'evt_' + Date.now(), ...eventData, updatedAt: Date.now() };
       this.events.push(newEvent);
       this.saveToStorage();
       showToast('Evento creato con successo.');
@@ -402,21 +587,40 @@
     updateEvent(id, eventData) {
       const idx = this.events.findIndex(e => e.id === id);
       if (idx !== -1) {
-        this.events[idx] = { ...this.events[idx], ...eventData };
+        this.events[idx] = { ...this.events[idx], ...eventData, updatedAt: Date.now() };
         this.saveToStorage();
         showToast('Evento aggiornato.');
       }
     },
 
     deleteEvent(id) {
-      this.events = this.events.filter(e => e.id !== id);
-      this.saveToStorage();
-      showToast('Evento eliminato.', 'danger');
+      const idx = this.events.findIndex(e => e.id === id);
+      if (idx === -1) return;
+      const removed = this.events[idx];
+      this.events.splice(idx, 1);
+      this.recentlyDeletedIds.set(id, Date.now());
+      this.notify();
+
+      showToast('Evento eliminato.', 'danger', {
+        actionLabel: 'Annulla',
+        duration: 5000,
+        onAction: () => {
+          const insertAt = findInsertionIndexById(this.events, removed);
+          this.events.splice(insertAt, 0, removed);
+          this.recentlyDeletedIds.delete(id);
+          this.saveToStorage();
+        },
+        onExpire: () => {
+          this.tombstones.push({ id, deletedAt: Date.now() });
+          this.saveToStorage();
+          setTimeout(() => this.recentlyDeletedIds.delete(id), 20000);
+        }
+      });
     },
 
     // Operazioni Memo / Task
     addTask(taskData) {
-      const newTask = { id: 'task_' + Date.now(), status: 'todo', ...taskData };
+      const newTask = { id: 'task_' + Date.now(), status: 'todo', ...taskData, updatedAt: Date.now() };
       this.tasks.push(newTask);
       this.saveToStorage();
       showToast('Memo creato con successo.');
@@ -426,22 +630,42 @@
     updateTask(id, taskData) {
       const idx = this.tasks.findIndex(t => t.id === id);
       if (idx !== -1) {
-        this.tasks[idx] = { ...this.tasks[idx], ...taskData };
+        this.tasks[idx] = { ...this.tasks[idx], ...taskData, updatedAt: Date.now() };
         this.saveToStorage();
         showToast('Memo aggiornato.');
       }
     },
 
     deleteTask(id) {
-      this.tasks = this.tasks.filter(t => t.id !== id);
-      this.saveToStorage();
-      showToast('Memo eliminato.', 'danger');
+      const idx = this.tasks.findIndex(t => t.id === id);
+      if (idx === -1) return;
+      const removed = this.tasks[idx];
+      this.tasks.splice(idx, 1);
+      this.recentlyDeletedIds.set(id, Date.now());
+      this.notify();
+
+      showToast('Memo eliminato.', 'danger', {
+        actionLabel: 'Annulla',
+        duration: 5000,
+        onAction: () => {
+          const insertAt = findInsertionIndexById(this.tasks, removed);
+          this.tasks.splice(insertAt, 0, removed);
+          this.recentlyDeletedIds.delete(id);
+          this.saveToStorage();
+        },
+        onExpire: () => {
+          this.tombstones.push({ id, deletedAt: Date.now() });
+          this.saveToStorage();
+          setTimeout(() => this.recentlyDeletedIds.delete(id), 20000);
+        }
+      });
     },
 
     toggleTaskStatus(id) {
       const task = this.tasks.find(t => t.id === id);
       if (task) {
         task.status = task.status === 'completed' ? 'todo' : 'completed';
+        task.updatedAt = Date.now();
         this.saveToStorage();
       }
     },
@@ -450,6 +674,7 @@
       const task = this.tasks.find(t => t.id === id);
       if (task) {
         task.dueDate = dateStr;
+        task.updatedAt = Date.now();
         this.saveToStorage();
       }
     },
@@ -638,12 +863,15 @@
       eventsContainer.className = 'cell-events-container';
 
       const dayEvents = AppState.events.filter(e => {
+        if (e.date !== cellDateStr) return false;
         if (AppState.filterCategory !== 'all' && e.category !== AppState.filterCategory) return false;
         if (AppState.searchQuery.trim()) {
           const q = AppState.searchQuery.toLowerCase();
-          return e.title.toLowerCase().includes(q) || (e.description && e.description.toLowerCase().includes(q));
+          const matchTitle = e.title.toLowerCase().includes(q);
+          const matchDesc = e.description && e.description.toLowerCase().includes(q);
+          if (!matchTitle && !matchDesc) return false;
         }
-        return e.date === cellDateStr;
+        return true;
       });
 
       dayEvents.forEach(evt => {
@@ -907,18 +1135,24 @@
           const dateBtn = card.querySelector('.date-task-btn');
           dateBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const newDate = prompt(`Inserisci nuova data (YYYY-MM-DD) per '${task.title}':`, task.dueDate || formatDateKey(new Date()));
-            if (newDate !== null) {
-              AppState.assignTaskDate(task.id, newDate.trim() || null);
+            const dateInput = document.getElementById('taskDateAssignInput');
+            if (!dateInput) return;
+            dateInput.value = task.dueDate || '';
+            dateInput.onchange = () => {
+              AppState.assignTaskDate(task.id, dateInput.value || null);
+            };
+            if (typeof dateInput.showPicker === 'function') {
+              dateInput.showPicker();
+            } else {
+              dateInput.focus();
+              dateInput.click();
             }
           });
 
           const deleteBtn = card.querySelector('.delete-task-btn');
           deleteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (confirm(`Eliminare il memo '${task.title}'?`)) {
-              AppState.deleteTask(task.id);
-            }
+            AppState.deleteTask(task.id);
           });
 
           card.addEventListener('click', () => openTaskModal(task));
@@ -1482,6 +1716,18 @@
   }
 
   function initModals() {
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-backdrop:not(.hidden)').forEach(m => closeModal(m.id));
+        return;
+      }
+      if (e.key === '/' && !isTypingTarget(e.target)) {
+        e.preventDefault();
+        const searchInput = document.getElementById('taskSearchInput');
+        if (searchInput) searchInput.focus();
+      }
+    });
+
     document.querySelectorAll('.modal-close').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const modalId = e.currentTarget.dataset.close;
@@ -1504,7 +1750,7 @@
     if (deleteEventBtn) {
       deleteEventBtn.addEventListener('click', () => {
         const eventId = document.getElementById('eventId').value;
-        if (eventId && confirm('Eliminare questo evento?')) {
+        if (eventId) {
           AppState.deleteEvent(eventId);
           closeModal('eventModal');
         }
@@ -1518,7 +1764,7 @@
     if (deleteTaskBtn) {
       deleteTaskBtn.addEventListener('click', () => {
         const taskId = document.getElementById('taskId').value;
-        if (taskId && confirm('Eliminare questo memo?')) {
+        if (taskId) {
           AppState.deleteTask(taskId);
           closeModal('taskModal');
         }
@@ -1535,6 +1781,11 @@
         const errorMsg = document.getElementById('initialLoginErrorMsg');
         processLogin(username, password, errorMsg);
       });
+    }
+
+    const guestModeBtn = document.getElementById('guestModeBtn');
+    if (guestModeBtn) {
+      guestModeBtn.addEventListener('click', () => AppState.enterGuestMode());
     }
 
     // Modal Quick Auth
@@ -1977,6 +2228,78 @@
         }
       });
     });
+
+    // ==========================================
+    // PWA: Install Banner, Offline Retry, Notifiche
+    // ==========================================
+    let deferredInstallPrompt = null;
+    const installBanner = document.getElementById('installBanner');
+    const installBannerBtn = document.getElementById('installBannerBtn');
+    const installBannerDismissBtn = document.getElementById('installBannerDismissBtn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      if (installBanner && !localStorage.getItem('chronos_install_dismissed_v1')) {
+        installBanner.classList.remove('hidden');
+      }
+    });
+
+    if (installBannerBtn) {
+      installBannerBtn.addEventListener('click', async () => {
+        if (!deferredInstallPrompt) return;
+        deferredInstallPrompt.prompt();
+        await deferredInstallPrompt.userChoice;
+        deferredInstallPrompt = null;
+        if (installBanner) installBanner.classList.add('hidden');
+      });
+    }
+
+    if (installBannerDismissBtn) {
+      installBannerDismissBtn.addEventListener('click', () => {
+        if (installBanner) installBanner.classList.add('hidden');
+        localStorage.setItem('chronos_install_dismissed_v1', '1');
+      });
+    }
+
+    window.addEventListener('appinstalled', () => {
+      showToast('Planner installato con successo.');
+      if (installBanner) installBanner.classList.add('hidden');
+    });
+
+    window.addEventListener('offline', () => {
+      showToast('Sei offline. Le modifiche verranno sincronizzate al ripristino della connessione.', 'danger');
+    });
+
+    window.addEventListener('online', () => {
+      if (AppState.token && AppState.hasPendingSync) {
+        AppState.pushToRedis();
+        showToast('Connessione ripristinata: sincronizzazione in corso.');
+      }
+    });
+
+    const enableNotifBtn = document.getElementById('enableNotificationsBtn');
+    if (enableNotifBtn) {
+      if (!('Notification' in window)) {
+        enableNotifBtn.classList.add('hidden');
+      } else {
+        enableNotifBtn.addEventListener('click', () => {
+          Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+              showToast('Notifiche attivate.');
+              checkAndNotify();
+              setInterval(checkAndNotify, 5 * 60 * 1000);
+            } else {
+              showToast('Notifiche non abilitate.', 'danger');
+            }
+          });
+        });
+        if (Notification.permission === 'granted') {
+          checkAndNotify();
+          setInterval(checkAndNotify, 5 * 60 * 1000);
+        }
+      }
+    }
 
     renderCalendar();
     renderTasks();
