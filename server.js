@@ -207,26 +207,19 @@ function authenticateAdmin(req, res, next) {
   next();
 }
 
-// Inizializzazione Utente Admin Predefinito
+// Inizializzazione Utente Admin Predefinito (Username: admin | Password: admin123)
 async function ensureAdminUser() {
   const adminKey = 'user:admin:auth';
-  const adminRaw = await getDbItem(adminKey);
-
-  if (!adminRaw) {
-    const adminObj = {
-      username: 'admin',
-      displayName: 'Amministratore (Matteo)',
-      role: 'admin',
-      passwordHash: hashPassword('admin123'),
-      createdAt: new Date().toISOString()
-    };
-    await setDbItem(adminKey, JSON.stringify(adminObj));
-    await addUserToIndex('admin');
-    console.log('👑 Account Admin predefinito inizializzato (Username: admin | Password: admin123)');
-  } else {
-    // Assicura che l'indice contenga l'admin
-    await addUserToIndex('admin');
-  }
+  const adminObj = {
+    username: 'admin',
+    displayName: 'Amministratore (Matteo)',
+    role: 'admin',
+    passwordHash: hashPassword('admin123'),
+    createdAt: new Date().toISOString()
+  };
+  await setDbItem(adminKey, JSON.stringify(adminObj));
+  await addUserToIndex('admin');
+  console.log('👑 Account Admin predefinito garantito (Username: admin | Password: admin123)');
 }
 
 // Chiama l'inizializzazione dell'admin
