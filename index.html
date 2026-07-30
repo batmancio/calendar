@@ -3,21 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Chronos | Calendario, Eventi & Memo con Urgenza</title>
-  <meta name="description" content="Applicazione web per la gestione integrata di calendario eventi categorizzati e memo/task con livello di urgenza.">
+  <title>Chronos | Calendario & Memo</title>
+  <meta name="description" content="Applicazione web per la gestione integrata di calendario eventi e memo.">
   
-  <!-- PWA & Mobile Web App Meta Tags for iOS / iPhone -->
+  <!-- PWA & Mobile Web App Meta Tags for iOS / Mobile -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0b0f19">
+  <meta name="theme-color" content="#0b0e14">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Chronos">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236366f1'><rect x='3' y='4' width='18' height='18' rx='4' fill='%23111827' stroke='%236366f1' stroke-width='2'/><circle cx='8' cy='14' r='1.5' fill='%23ff4757'/><circle cx='12' cy='14' r='1.5' fill='%23ffa502'/><circle cx='16' cy='14' r='1.5' fill='%232ed573'/></svg>">
 
-  <!-- Google Fonts: Outfit & Inter -->
+  <!-- Google Fonts: Inter & Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
   
   <!-- CSS Styles -->
   <link rel="stylesheet" href="style.css">
@@ -28,73 +27,67 @@
     <header class="app-header">
       <div class="header-brand">
         <button id="toggleSidebarMobileBtn" class="btn-icon mobile-only-inline" title="Apri Memo & Filtri">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
         </button>
 
         <div class="brand-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="4" ry="4"></rect>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="3" ry="3"></rect>
             <line x1="16" y1="2" x2="16" y2="6"></line>
             <line x1="8" y1="2" x2="8" y2="6"></line>
             <line x1="3" y1="10" x2="21" y2="10"></line>
-            <circle cx="8" cy="15" r="1" fill="currentColor"></circle>
-            <circle cx="12" cy="15" r="1" fill="currentColor"></circle>
-            <circle cx="16" cy="15" r="1" fill="currentColor"></circle>
           </svg>
         </div>
         <div>
           <h1 class="brand-title">Chronos</h1>
-          <span class="brand-subtitle">Calendario & Memo Hub</span>
         </div>
       </div>
 
       <!-- Controls & Quick Actions -->
       <div class="header-controls">
-        <!-- Account Status / Login Button & Admin Control Button -->
         <div id="accountUserWidget" class="account-widget">
-          <button id="openAdminPanelBtn" class="btn btn-warning-sm hidden" title="Apri il Pannello di Controllo Amministratore">
-            👑 <span class="btn-text">Pannello Admin</span>
+          <button id="openAdminPanelBtn" class="btn btn-secondary-sm hidden" title="Pannello Amministratore">
+            <span class="btn-text">Pannello Admin</span>
           </button>
           
-          <button id="openAuthModalBtn" class="btn btn-secondary-sm" title="Accedi con il tuo Account">
-            👤 <span class="btn-text">Accedi</span>
+          <button id="openAuthModalBtn" class="btn btn-secondary-sm" title="Accedi">
+            <span class="btn-text">Accedi</span>
           </button>
           
           <div id="userInfoBadge" class="user-badge hidden">
-            <span class="role-pill" id="userRoleBadge">👑 Admin</span>
+            <span class="role-pill" id="userRoleBadge">Admin</span>
             <span class="user-name-text"><strong id="currentUsernameLabel">admin</strong></span>
-            <button id="logoutBtn" class="btn-icon-xs" title="Disconnetti Account">&times;</button>
+            <button id="logoutBtn" class="btn-icon-xs" title="Disconnetti">&times;</button>
           </div>
         </div>
 
         <div class="view-switchers" role="tablist">
           <button id="viewMonthBtn" class="btn-tab active" role="tab" aria-selected="true">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
             <span class="btn-text">Mese</span>
           </button>
           <button id="viewAgendaBtn" class="btn-tab" role="tab" aria-selected="false">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
             <span class="btn-text">Agenda</span>
           </button>
         </div>
 
         <div class="action-buttons">
-          <!-- Backup / Sync Buttons -->
           <button id="exportDataBtn" class="btn btn-secondary-sm" title="Esporta Backup JSON">
-            📥 <span class="btn-text">Esporta</span>
+            <span class="btn-text">Esporta</span>
           </button>
           <button id="importDataBtn" class="btn btn-secondary-sm" title="Importa Backup JSON">
-            📤 <span class="btn-text">Importa</span>
+            <span class="btn-text">Importa</span>
           </button>
           <input type="file" id="importFileInput" accept=".json" class="hidden">
 
           <button id="addEventBtn" class="btn btn-secondary">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            + Evento
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Evento
           </button>
           <button id="addTaskBtn" class="btn btn-primary">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-            + Memo
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Memo
           </button>
         </div>
       </div>
@@ -102,16 +95,16 @@
 
     <!-- Main Layout -->
     <div class="app-layout">
-      <!-- Sidebar / Task & Memo Drawer -->
+      <!-- Sidebar -->
       <aside id="appSidebar" class="app-sidebar">
         <div class="sidebar-header-mobile mobile-only">
           <h3>Memo & Filtri</h3>
           <button id="closeSidebarMobileBtn" class="btn-icon">&times;</button>
         </div>
 
-        <!-- Dashboard Stats Widget -->
+        <!-- Dashboard Urgencies -->
         <div class="sidebar-section urgency-stats-widget">
-          <h2 class="section-title">Panoramica Urgenze</h2>
+          <h2 class="section-title">Urgenze</h2>
           <div class="urgency-grid">
             <div class="urgency-card critical" data-urgency="critical" title="Filtra per urgenza Critica">
               <span class="card-count" id="countCritical">0</span>
@@ -135,7 +128,7 @@
         <!-- Filters & Search -->
         <div class="sidebar-section filters-section">
           <div class="search-box">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <input type="text" id="taskSearchInput" placeholder="Cerca tra eventi e memo...">
           </div>
           
@@ -143,12 +136,12 @@
             <label for="filterCategory">Categoria</label>
             <select id="filterCategory" class="custom-select">
               <option value="all">Tutte le Categorie</option>
-              <option value="lavoro">💼 Lavoro</option>
-              <option value="personale">🏠 Personale</option>
-              <option value="studio">📚 Studio</option>
-              <option value="salute">❤️ Salute</option>
-              <option value="finanza">💰 Finanza</option>
-              <option value="altro">📌 Altro</option>
+              <option value="lavoro">Lavoro</option>
+              <option value="personale">Personale</option>
+              <option value="studio">Studio</option>
+              <option value="salute">Salute</option>
+              <option value="finanza">Finanza</option>
+              <option value="altro">Altro</option>
             </select>
           </div>
 
@@ -156,10 +149,10 @@
             <label for="filterUrgency">Urgenza</label>
             <select id="filterUrgency" class="custom-select">
               <option value="all">Tutte le Urgenze</option>
-              <option value="critical">🔴 Critica</option>
-              <option value="high">🟠 Alta</option>
-              <option value="medium">🟡 Media</option>
-              <option value="low">🟢 Bassa</option>
+              <option value="critical">Critica</option>
+              <option value="high">Alta</option>
+              <option value="medium">Media</option>
+              <option value="low">Bassa</option>
             </select>
           </div>
         </div>
@@ -169,28 +162,28 @@
           <div class="drawer-header">
             <div class="drawer-tabs">
               <button id="tabUndatedMemo" class="tab-sub active">Memo Sospesi</button>
-              <button id="tabAllTasks" class="tab-sub">Tutte le Task</button>
+              <button id="tabAllTasks" class="tab-sub">Tutti i Memo</button>
             </div>
             <span class="badge-count" id="drawerTaskCount">0</span>
           </div>
 
           <div class="task-list-scroll" id="sidebarTaskList">
-            <!-- Dynamic task items loaded here -->
+            <!-- Dynamic task items -->
           </div>
         </div>
       </aside>
 
       <!-- Main Calendar Area -->
       <main class="app-main">
-        <!-- Calendar Controls Toolbar -->
+        <!-- Calendar Toolbar -->
         <div class="calendar-toolbar">
           <div class="calendar-nav">
             <button id="prevMonthBtn" class="btn-icon" title="Mese precedente">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
             </button>
             <button id="todayBtn" class="btn btn-secondary-sm">Oggi</button>
             <button id="nextMonthBtn" class="btn-icon" title="Mese successivo">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </button>
             <h2 id="currentMonthYearLabel" class="current-month-title">Luglio 2026</h2>
           </div>
@@ -215,76 +208,66 @@
             <div>Dom</div>
           </div>
           <div id="calendarGrid" class="calendar-grid">
-            <!-- 35 or 42 grid items rendered dynamically -->
+            <!-- Grid items -->
           </div>
         </div>
 
         <!-- Agenda View Container -->
         <div id="agendaViewContainer" class="view-container hidden">
           <div class="agenda-header">
-            <h3>Prossimi Eventi & Task Programmate</h3>
+            <h3>Prossimi Eventi & Memo</h3>
           </div>
           <div id="agendaList" class="agenda-list">
-            <!-- Dynamic agenda items -->
+            <!-- Agenda items -->
           </div>
         </div>
       </main>
     </div>
   </div>
 
-  <!-- Fullscreen Mandatory Initial Login Overlay -->
+  <!-- Fullscreen Initial Login Overlay -->
   <div id="initialLoginOverlay" class="login-screen-overlay">
     <div class="login-hero-container">
       <div class="login-brand-header">
         <div class="login-brand-icon">
-          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="4" width="18" height="18" rx="4" ry="4"></rect>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="3" ry="3"></rect>
             <line x1="16" y1="2" x2="16" y2="6"></line>
             <line x1="8" y1="2" x2="8" y2="6"></line>
             <line x1="3" y1="10" x2="21" y2="10"></line>
-            <circle cx="8" cy="15" r="1.2" fill="currentColor"></circle>
-            <circle cx="12" cy="15" r="1.2" fill="currentColor"></circle>
-            <circle cx="16" cy="15" r="1.2" fill="currentColor"></circle>
           </svg>
         </div>
         <h1 class="login-app-title">Chronos</h1>
-        <p class="login-app-subtitle">Calendario, Eventi & Agenda Hub per Professionisti e Clienti</p>
+        <p class="login-app-subtitle">Calendario, Eventi e Memo</p>
       </div>
 
       <div class="login-card-glass">
         <div class="login-card-header">
           <h2>Accedi al tuo Account</h2>
-          <p>Inserisci le tue credenziali per visualizzare e sincronizzare i tuoi eventi e memo.</p>
+          <p>Inserisci le credenziali per accedere ai tuoi eventi e memo.</p>
         </div>
 
         <form id="initialLoginForm" class="login-form">
           <div class="form-group">
-            <label for="initialUsername">Nome Utente / Username</label>
-            <div class="input-with-icon">
-              <span class="input-icon-symbol">👤</span>
-              <input type="text" id="initialUsername" placeholder="Es. admin o tuo_username" required autocomplete="username">
-            </div>
+            <label for="initialUsername">Username</label>
+            <input type="text" id="initialUsername" placeholder="Es. admin o username" required autocomplete="username">
           </div>
 
           <div class="form-group">
             <label for="initialPassword">Password</label>
-            <div class="input-with-icon">
-              <span class="input-icon-symbol">🔒</span>
-              <input type="password" id="initialPassword" placeholder="••••••••" required autocomplete="current-password">
-            </div>
+            <input type="password" id="initialPassword" placeholder="••••••••" required autocomplete="current-password">
           </div>
 
           <div id="initialLoginErrorMsg" class="login-error-msg hidden"></div>
 
           <button type="submit" id="initialLoginSubmitBtn" class="btn btn-primary btn-block btn-lg">
-            <span>Accedi a Chronos</span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <span>Accedi</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
           </button>
         </form>
 
         <div class="login-card-footer">
-          <span class="hint-badge">🔐 Cloud Sync Redis & Dati Riservati</span>
-          <p class="client-notice">Non hai ancora un account? Contatta l'Amministratore per richiedere le tue credenziali di accesso.</p>
+          <p class="client-notice">Per richiedere le credenziali di accesso, contatta l'amministratore.</p>
         </div>
       </div>
     </div>
@@ -323,18 +306,18 @@
         <div class="form-group">
           <label for="eventCategory">Categoria *</label>
           <select id="eventCategory" class="custom-select" required>
-            <option value="lavoro">💼 Lavoro</option>
-            <option value="personale">🏠 Personale</option>
-            <option value="studio">📚 Studio</option>
-            <option value="salute">❤️ Salute</option>
-            <option value="finanza">💰 Finanza</option>
-            <option value="altro">📌 Altro</option>
+            <option value="lavoro">Lavoro</option>
+            <option value="personale">Personale</option>
+            <option value="studio">Studio</option>
+            <option value="salute">Salute</option>
+            <option value="finanza">Finanza</option>
+            <option value="altro">Altro</option>
           </select>
         </div>
 
         <div class="form-group">
           <label for="eventDescription">Note / Descrizione</label>
-          <textarea id="eventDescription" rows="3" placeholder="Dettagli dell'evento, link o luogo..."></textarea>
+          <textarea id="eventDescription" rows="3" placeholder="Dettagli dell'evento..."></textarea>
         </div>
 
         <div class="modal-footer">
@@ -346,77 +329,76 @@
     </div>
   </div>
 
-  <!-- Modal: Task / Memo -->
+  <!-- Modal: Memo / Task -->
   <div id="taskModal" class="modal-backdrop hidden">
     <div class="modal-card">
       <div class="modal-header">
-        <h3 id="taskModalTitle">Nuovo Memo / Task</h3>
+        <h3 id="taskModalTitle">Nuovo Memo</h3>
         <button class="btn-icon modal-close" data-close="taskModal">&times;</button>
       </div>
       <form id="taskForm" class="modal-form">
         <input type="hidden" id="taskId">
 
         <div class="form-group">
-          <label for="taskTitle">Titolo Task / Memo *</label>
-          <input type="text" id="taskTitle" placeholder="Es. Revisione documenti contabili" required>
+          <label for="taskTitle">Titolo Memo *</label>
+          <input type="text" id="taskTitle" placeholder="Es. Revisione contabile" required>
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label for="taskUrgency">Livello di Urgenza *</label>
             <select id="taskUrgency" class="custom-select" required>
-              <option value="critical">🔴 Critica (Azione Immediata)</option>
-              <option value="high">🟠 Alta (Prioritaria)</option>
-              <option value="medium" selected>🟡 Media (Normale)</option>
-              <option value="low">🟢 Bassa (Facoltativa)</option>
+              <option value="critical">Critica</option>
+              <option value="high">Alta</option>
+              <option value="medium" selected>Media</option>
+              <option value="low">Bassa</option>
             </select>
           </div>
 
           <div class="form-group">
             <label for="taskCategory">Categoria</label>
             <select id="taskCategory" class="custom-select">
-              <option value="lavoro">💼 Lavoro</option>
-              <option value="personale">🏠 Personale</option>
-              <option value="studio">📚 Studio</option>
-              <option value="salute">❤️ Salute</option>
-              <option value="finanza">💰 Finanza</option>
-              <option value="altro" selected>📌 Altro</option>
+              <option value="lavoro">Lavoro</option>
+              <option value="personale">Personale</option>
+              <option value="studio">Studio</option>
+              <option value="salute">Salute</option>
+              <option value="finanza">Finanza</option>
+              <option value="altro" selected>Altro</option>
             </select>
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label for="taskDueDate">Data Scadenza / Assegnata <small>(Opzionale)</small></label>
+            <label for="taskDueDate">Data Scadenza <small>(Opzionale)</small></label>
             <input type="date" id="taskDueDate">
-            <span class="help-text">Lascia vuoto per creare un memo fluttuante.</span>
           </div>
 
           <div class="form-group">
             <label for="taskStatus">Stato</label>
             <select id="taskStatus" class="custom-select">
-              <option value="todo">⏳ Da fare</option>
-              <option value="in_progress">⚡ In corso</option>
-              <option value="completed">✅ Completata</option>
+              <option value="todo">Da fare</option>
+              <option value="in_progress">In corso</option>
+              <option value="completed">Completato</option>
             </select>
           </div>
         </div>
 
         <div class="form-group">
-          <label for="taskDescription">Descrizione Memo</label>
-          <textarea id="taskDescription" rows="3" placeholder="Dettagli della task, checklist o annotazioni..."></textarea>
+          <label for="taskDescription">Descrizione</label>
+          <textarea id="taskDescription" rows="3" placeholder="Dettagli del memo..."></textarea>
         </div>
 
         <div class="modal-footer">
           <button type="button" class="btn btn-tertiary modal-close" data-close="taskModal">Annulla</button>
           <button type="button" id="deleteTaskBtn" class="btn btn-danger hidden">Elimina</button>
-          <button type="submit" class="btn btn-primary">Salva Task</button>
+          <button type="submit" class="btn btn-primary">Salva Memo</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Modal: Autenticazione Account Modal Rapid Access -->
+  <!-- Modal: Autenticazione Accesso Rapido -->
   <div id="authModal" class="modal-backdrop hidden">
     <div class="modal-card">
       <div class="modal-header">
@@ -426,14 +408,14 @@
       <div class="modal-form">
         <form id="loginForm" class="auth-form-sub">
           <div class="form-group">
-            <label for="loginUsername">Nome Utente *</label>
-            <input type="text" id="loginUsername" placeholder="Es. admin o username_cliente" required>
+            <label for="loginUsername">Username *</label>
+            <input type="text" id="loginUsername" placeholder="Username" required>
           </div>
           <div class="form-group">
             <label for="loginPassword">Password *</label>
             <input type="password" id="loginPassword" placeholder="••••••••" required>
           </div>
-          <div id="loginErrorMsg" class="help-text overdue hidden" style="color: #ff4757; font-weight: 600;"></div>
+          <div id="loginErrorMsg" class="help-text overdue hidden" style="color: #ef4444; font-weight: 600;"></div>
           <div class="modal-footer">
             <button type="button" class="btn btn-tertiary modal-close" data-close="authModal">Annulla</button>
             <button type="submit" class="btn btn-primary">Accedi</button>
@@ -443,55 +425,55 @@
     </div>
   </div>
 
-  <!-- Modal: Pannello Amministrazione & Gestione Clienti -->
+  <!-- Modal: Pannello Amministrazione -->
   <div id="adminModal" class="modal-backdrop hidden">
     <div class="modal-card modal-card-lg">
       <div class="modal-header">
         <div>
-          <h3 id="adminModalTitle">👑 Pannello Controllo Amministratore</h3>
-          <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;">Gestisci i clienti, crea nuovi account e controlla gli accessi alla piattaforma Chronos.</p>
+          <h3 id="adminModalTitle">Pannello Amministratore</h3>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;">Gestione utenti ed accessi.</p>
         </div>
         <button class="btn-icon modal-close" data-close="adminModal">&times;</button>
       </div>
 
       <div class="modal-body-scroll">
-        <!-- Sezione 1: Form Creazione Account Cliente -->
+        <!-- Sezione 1: Creazione Account Cliente -->
         <div class="admin-section-card">
-          <h4 class="admin-section-title">✨ Crea Nuovo Account Cliente</h4>
+          <h4 class="admin-section-title">Nuovo Account Cliente</h4>
           <form id="adminCreateUserForm" class="admin-form-grid">
             <div class="form-group">
               <label for="adminNewUsername">Username * <small>(Min 3 caratteri)</small></label>
               <input type="text" id="adminNewUsername" placeholder="Es. cliente_rossi" required>
             </div>
             <div class="form-group">
-              <label for="adminNewDisplayName">Nome Completo / Azienda Cliente</label>
+              <label for="adminNewDisplayName">Nome Completo / Azienda</label>
               <input type="text" id="adminNewDisplayName" placeholder="Es. Rossi SRL">
             </div>
             <div class="form-group">
-              <label for="adminNewPassword">Password Iniziale * <small>(Min 4 caratteri)</small></label>
-              <input type="text" id="adminNewPassword" placeholder="Password per il cliente" required>
+              <label for="adminNewPassword">Password * <small>(Min 4 caratteri)</small></label>
+              <input type="text" id="adminNewPassword" placeholder="Password" required>
             </div>
             <div class="form-group">
               <label for="adminNewRole">Ruolo Account</label>
               <select id="adminNewRole" class="custom-select">
-                <option value="client" selected>👤 Cliente Standard</option>
-                <option value="admin">👑 Amministratore</option>
+                <option value="client" selected>Cliente Standard</option>
+                <option value="admin">Amministratore</option>
               </select>
             </div>
             <div class="form-group full-width" style="margin-top: 4px;">
               <button type="submit" class="btn btn-primary">
-                ➕ Crea Account Cliente
+                Crea Account
               </button>
             </div>
           </form>
           <div id="adminCreateUserMsg" class="help-text hidden" style="margin-top: 8px;"></div>
         </div>
 
-        <!-- Sezione 2: Elenco Clienti & Account Esistenti -->
-        <div class="admin-section-card" style="margin-top: 20px;">
+        <!-- Sezione 2: Elenco Utenti -->
+        <div class="admin-section-card" style="margin-top: 16px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <h4 class="admin-section-title" style="margin-bottom: 0;">👥 Account Registrati sulla Piattaforma</h4>
-            <button id="refreshAdminUsersBtn" class="btn btn-secondary-sm">🔄 Aggiorna Lista</button>
+            <h4 class="admin-section-title" style="margin-bottom: 0;">Account Registrati</h4>
+            <button id="refreshAdminUsersBtn" class="btn btn-secondary-sm">Aggiorna</button>
           </div>
 
           <div class="table-responsive">
@@ -506,7 +488,7 @@
                 </tr>
               </thead>
               <tbody id="adminUserListTbody">
-                <!-- Caricato dinamicamente tramite JS -->
+                <!-- Caricato dinamicamente -->
               </tbody>
             </table>
           </div>
@@ -514,16 +496,15 @@
       </div>
 
       <div class="modal-footer">
-        <button type="button" class="btn btn-tertiary modal-close" data-close="adminModal">Chiudi Pannello</button>
+        <button type="button" class="btn btn-tertiary modal-close" data-close="adminModal">Chiudi</button>
       </div>
     </div>
   </div>
 
-  <!-- Toast Notification Container -->
+  <!-- Toast Container -->
   <div id="toastContainer" class="toast-container"></div>
 
-  <!-- JavaScript App Logic -->
+  <!-- JavaScript -->
   <script src="js/app.js"></script>
 </body>
 </html>
-
