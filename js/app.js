@@ -681,6 +681,28 @@
         eventsContainer.appendChild(taskEl);
       });
 
+      // Mobile: limit visible items to 2, show overflow counter
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        const allItems = eventsContainer.querySelectorAll('.cell-item');
+        const maxVisible = 2;
+        if (allItems.length > maxVisible) {
+          for (let idx = maxVisible; idx < allItems.length; idx++) {
+            allItems[idx].style.display = 'none';
+          }
+          const overflowEl = document.createElement('div');
+          overflowEl.className = 'cell-events-overflow';
+          overflowEl.textContent = `+${allItems.length - maxVisible}`;
+          overflowEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Show all items when tapped
+            allItems.forEach(item => item.style.display = '');
+            overflowEl.remove();
+          });
+          eventsContainer.appendChild(overflowEl);
+        }
+      }
+
       cell.appendChild(eventsContainer);
       setupCellDragAndDrop(cell, cellDateStr);
 
@@ -1958,5 +1980,241 @@
 
     renderCalendar();
     renderTasks();
+
+    // ==========================================
+    // 7. MOBILE INTERACTIONS
+    // ==========================================
+    initMobileInteractions();
   });
+
+  // ==========================================
+  // MOBILE: Bottom Nav, FAB, Sidebar, Swipe
+  // ==========================================
+  function initMobileInteractions() {
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const appSidebar = document.getElementById('appSidebar');
+    const fabMainBtn = document.getElementById('fabMainBtn');
+    const fabSpeedDial = document.getElementById('fabSpeedDial');
+    const fabOptionEvent = document.getElementById('fabOptionEvent');
+    const fabOptionMemo = document.getElementById('fabOptionMemo');
+    const mobileBottomNav = document.getElementById('mobileBottomNav');
+    const bottomNavSidebarBtn = document.getElementById('bottomNavSidebarBtn');
+    const calendarGrid = document.getElementById('calendarGrid');
+
+    // --- Sidebar Overlay: close on tap ---
+    if (sidebarOverlay && appSidebar) {
+      sidebarOverlay.addEventListener('click', () => {
+        closeMobileSidebar();
+      });
+    }
+
+    // Enhance existing sidebar toggle to also show/hide overlay
+    const toggleSidebarMobileBtn = document.getElementById('toggleSidebarMobileBtn');
+    if (toggleSidebarMobileBtn) {
+      // Remove old listener is not easy, so we add the overlay toggle
+      toggleSidebarMobileBtn.addEventListener('click', () => {
+        openMobileSidebar();
+      });
+    }
+
+    const closeSidebarMobileBtn = document.getElementById('closeSidebarMobileBtn');
+    if (closeSidebarMobileBtn) {
+      closeSidebarMobileBtn.addEventListener('click', () => {
+        closeMobileSidebar();
+      });
+    }
+
+    // Bottom nav sidebar button
+    if (bottomNavSidebarBtn) {
+      bottomNavSidebarBtn.addEventListener('click', () => {
+        openMobileSidebar();
+      });
+    }
+
+    function openMobileSidebar() {
+      if (appSidebar) appSidebar.classList.add('open-mobile');
+      if (sidebarOverlay) {
+        sidebarOverlay.classList.add('visible');
+      }
+      // Prevent body scroll
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeMobileSidebar() {
+      if (appSidebar) appSidebar.classList.remove('open-mobile');
+      if (sidebarOverlay) {
+        sidebarOverlay.classList.remove('visible');
+      }
+      document.body.style.overflow = '';
+    }
+
+    // --- FAB Speed Dial ---
+    if (fabMainBtn && fabSpeedDial) {
+      fabMainBtn.addEventListener('click', () => {
+        const isOpen = fabSpeedDial.classList.contains('open');
+        if (isOpen) {
+          closeFab();
+        } else {
+          fabSpeedDial.classList.add('open');
+          fabMainBtn.classList.add('open');
+        }
+      });
+
+      // Close FAB when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!fabMainBtn.contains(e.target) && !fabSpeedDial.contains(e.target)) {
+          closeFab();
+        }
+      });
+    }
+
+    function closeFab() {
+      if (fabSpeedDial) fabSpeedDial.classList.remove('open');
+      if (fabMainBtn) fabMainBtn.classList.remove('open');
+    }
+
+    if (fabOptionEvent) {
+      fabOptionEvent.addEventListener('click', () => {
+        closeFab();
+        openEventModal();
+      });
+    }
+
+    if (fabOptionMemo) {
+      fabOptionMemo.addEventListener('click', () => {
+        closeFab();
+        openTaskModal();
+      });
+    }
+
+    // --- Bottom Navigation: View Switching ---
+    if (mobileBottomNav) {
+      const navItems = mobileBottomNav.querySelectorAll('.bottom-nav-item[data-view]');
+      navItems.forEach(item => {
+        item.addEventListener('click', () => {
+          const view = item.dataset.view;
+          if (!view) return;
+
+          // Update bottom nav active state
+          mobileBottomNav.querySelectorAll('.bottom-nav-item').forEach(i => i.classList.remove('active'));
+          item.classList.add('active');
+
+          // Sync with header view buttons
+          AppState.currentView = view;
+          const viewMonthBtn = document.getElementById('viewMonthBtn');
+          const viewAgendaBtn = document.getElementById('viewAgendaBtn');
+          const viewMemoBtn = document.getElementById('viewMemoBtn');
+          if (viewMonthBtn) viewMonthBtn.classList.toggle('active', view === 'month');
+          if (viewAgendaBtn) viewAgendaBtn.classList.toggle('active', view === 'agenda');
+          if (viewMemoBtn) viewMemoBtn.classList.toggle('active', view === 'memo');
+
+          renderCalendar();
+          closeFab();
+        });
+      });
+    }
+
+    // --- Swipe Gesture for Month Navigation ---
+    if (calendarGrid) {
+      let touchStartX = 0;
+      let touchStartY = 0;
+      let isSwiping = false;
+
+      calendarGrid.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        isSwiping = true;
+      }, { passive: true });
+
+      calendarGrid.addEventListener('touchend', (e) => {
+        if (!isSwiping) return;
+        isSwiping = false;
+
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const diffX = touchEndX - touchStartX;
+        const diffY = touchEndY - touchStartY;
+
+        // Minimum swipe distance 60px, and more horizontal than vertical
+        if (Math.abs(diffX) > 60 && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
+          if (diffX < 0) {
+            // Swipe left = next month
+            const d = AppState.currentDate;
+            AppState.currentDate = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+            calendarGrid.classList.add('slide-left');
+          } else {
+            // Swipe right = prev month
+            const d = AppState.currentDate;
+            AppState.currentDate = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+            calendarGrid.classList.add('slide-right');
+          }
+
+          renderCalendar();
+
+          // Remove animation class after it finishes
+          setTimeout(() => {
+            calendarGrid.classList.remove('slide-left', 'slide-right');
+          }, 350);
+        }
+      }, { passive: true });
+    }
+
+    // --- Bottom Sheet Drag to Close ---
+    if (appSidebar) {
+      let sheetStartY = 0;
+      let sheetIsDragging = false;
+
+      const handleEl = appSidebar.querySelector('.bottom-sheet-handle');
+      if (handleEl) {
+        handleEl.addEventListener('touchstart', (e) => {
+          sheetStartY = e.touches[0].clientY;
+          sheetIsDragging = true;
+          appSidebar.style.transition = 'none';
+        }, { passive: true });
+
+        handleEl.addEventListener('touchmove', (e) => {
+          if (!sheetIsDragging) return;
+          const currentY = e.touches[0].clientY;
+          const diffY = currentY - sheetStartY;
+          if (diffY > 0) {
+            appSidebar.style.transform = `translateY(${diffY}px)`;
+          }
+        }, { passive: true });
+
+        handleEl.addEventListener('touchend', (e) => {
+          if (!sheetIsDragging) return;
+          sheetIsDragging = false;
+          appSidebar.style.transition = '';
+
+          const endY = e.changedTouches[0].clientY;
+          const diffY = endY - sheetStartY;
+
+          if (diffY > 100) {
+            // Dragged down enough — close
+            closeMobileSidebar();
+          } else {
+            // Snap back
+            appSidebar.style.transform = '';
+          }
+        }, { passive: true });
+      }
+    }
+
+    // --- Sync bottom nav with header view changes (from desktop listeners) ---
+    function syncBottomNav(view) {
+      if (!mobileBottomNav) return;
+      mobileBottomNav.querySelectorAll('.bottom-nav-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.view === view);
+      });
+    }
+
+    // Override the header view button clicks to also sync bottom nav
+    const viewMonthBtn = document.getElementById('viewMonthBtn');
+    const viewAgendaBtn = document.getElementById('viewAgendaBtn');
+    const viewMemoBtn = document.getElementById('viewMemoBtn');
+
+    if (viewMonthBtn) viewMonthBtn.addEventListener('click', () => syncBottomNav('month'));
+    if (viewAgendaBtn) viewAgendaBtn.addEventListener('click', () => syncBottomNav('agenda'));
+    if (viewMemoBtn) viewMemoBtn.addEventListener('click', () => syncBottomNav('memo'));
+  }
 })();
