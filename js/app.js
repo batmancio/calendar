@@ -270,12 +270,15 @@
       const label = document.getElementById('currentUsernameLabel');
       const roleBadge = document.getElementById('userRoleBadge');
       const openAdminBtn = document.getElementById('openAdminPanelBtn');
+      const avatarCircle = document.getElementById('userAvatarCircle');
 
       if (isLoggedIn) {
         if (initialOverlay) initialOverlay.classList.add('hidden');
         if (openBtn) openBtn.classList.add('hidden');
         if (badge) badge.classList.remove('hidden');
-        if (label) label.textContent = this.displayName || this.username;
+        const nameStr = this.displayName || this.username || 'Utente';
+        if (label) label.textContent = nameStr;
+        if (avatarCircle) avatarCircle.textContent = nameStr.charAt(0).toUpperCase();
 
         if (roleBadge) {
           if (this.userRole === 'admin') {

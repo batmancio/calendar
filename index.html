@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Chronos | Calendario & Memo</title>
+  <title>Planner | Calendario & Memo</title>
   <meta name="description" content="Applicazione web per la gestione integrata di calendario eventi e memo.">
   
   <!-- PWA & Mobile Web App Meta Tags for iOS / Mobile -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0b0e14">
+  <meta name="theme-color" content="#f8fafc">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Chronos">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Planner">
 
   <!-- Google Fonts: Inter & Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -30,24 +30,12 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
         </button>
 
-        <div class="brand-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="3" ry="3"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-          </svg>
-        </div>
-        <div>
-          <h1 class="brand-title">Chronos</h1>
-        </div>
-      </div>
+        <h1 class="brand-title">Planner</h1>
 
-      <!-- Controls & Quick Actions -->
-      <div class="header-controls">
+        <!-- Account Widget (In alto a sinistra accanto a Planner) -->
         <div id="accountUserWidget" class="account-widget">
           <button id="openAdminPanelBtn" class="btn btn-secondary-sm hidden" title="Pannello Amministratore">
-            <span class="btn-text">Pannello Admin</span>
+            <span class="btn-text">Admin</span>
           </button>
           
           <button id="openAuthModalBtn" class="btn btn-secondary-sm" title="Accedi">
@@ -55,12 +43,18 @@
           </button>
           
           <div id="userInfoBadge" class="user-badge hidden">
-            <span class="role-pill" id="userRoleBadge">Admin</span>
-            <span class="user-name-text"><strong id="currentUsernameLabel">admin</strong></span>
-            <button id="logoutBtn" class="btn-icon-xs" title="Disconnetti">&times;</button>
+            <div class="user-avatar" id="userAvatarCircle">A</div>
+            <div class="user-info-text">
+              <span class="user-name-text" id="currentUsernameLabel">admin</span>
+              <span class="role-pill" id="userRoleBadge">Admin</span>
+            </div>
+            <button id="logoutBtn" class="btn-icon-xs" title="Disconnetti" aria-label="Disconnetti">&times;</button>
           </div>
         </div>
+      </div>
 
+      <!-- Controls & Quick Actions -->
+      <div class="header-controls">
         <div class="view-switchers" role="tablist">
           <button id="viewMonthBtn" class="btn-tab active" role="tab" aria-selected="true">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
@@ -237,7 +231,7 @@
             <line x1="3" y1="10" x2="21" y2="10"></line>
           </svg>
         </div>
-        <h1 class="login-app-title">Chronos</h1>
+        <h1 class="login-app-title">Planner</h1>
         <p class="login-app-subtitle">Calendario, Eventi e Memo</p>
       </div>
 
@@ -402,7 +396,7 @@
   <div id="authModal" class="modal-backdrop hidden">
     <div class="modal-card">
       <div class="modal-header">
-        <h3 id="authModalTitle">Accedi a Chronos</h3>
+        <h3 id="authModalTitle">Accedi a Planner</h3>
         <button class="btn-icon modal-close" data-close="authModal">&times;</button>
       </div>
       <div class="modal-form">
