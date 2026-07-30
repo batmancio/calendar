@@ -170,12 +170,12 @@
             <label for="filterCategory">Categoria</label>
             <select id="filterCategory" class="custom-select">
               <option value="all">Tutte le Categorie</option>
-              <option value="lavoro">Lavoro</option>
-              <option value="personale">Personale</option>
-              <option value="studio">Studio</option>
-              <option value="salute">Salute</option>
-              <option value="finanza">Finanza</option>
-              <option value="altro">Altro</option>
+              <option value="lavoro">🔵 Lavoro</option>
+              <option value="personale">🟢 Personale</option>
+              <option value="studio">🟠 Studio</option>
+              <option value="salute">🔴 Salute</option>
+              <option value="finanza">🟣 Finanza</option>
+              <option value="altro">⚫ Altro</option>
             </select>
           </div>
 
@@ -413,12 +413,23 @@
         <div class="form-group">
           <label for="eventCategory">Categoria *</label>
           <select id="eventCategory" class="custom-select" required>
-            <option value="lavoro">Lavoro</option>
-            <option value="personale">Personale</option>
-            <option value="studio">Studio</option>
-            <option value="salute">Salute</option>
-            <option value="finanza">Finanza</option>
-            <option value="altro">Altro</option>
+            <option value="lavoro">🔵 Lavoro</option>
+            <option value="personale">🟢 Personale</option>
+            <option value="studio">🟠 Studio</option>
+            <option value="salute">🔴 Salute</option>
+            <option value="finanza">🟣 Finanza</option>
+            <option value="altro">⚫ Altro</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="eventRecurrence">Ricorrenza</label>
+          <select id="eventRecurrence" class="custom-select">
+            <option value="none" selected>Nessuna (Una tantum)</option>
+            <option value="daily">Giornaliera</option>
+            <option value="weekly">Settimanale</option>
+            <option value="monthly">Mensile</option>
+            <option value="yearly">Annuale</option>
           </select>
         </div>
 
@@ -471,12 +482,12 @@
           <div class="form-group">
             <label for="taskCategory">Categoria</label>
             <select id="taskCategory" class="custom-select">
-              <option value="lavoro">Lavoro</option>
-              <option value="personale">Personale</option>
-              <option value="studio">Studio</option>
-              <option value="salute">Salute</option>
-              <option value="finanza">Finanza</option>
-              <option value="altro" selected>Altro</option>
+              <option value="lavoro">🔵 Lavoro</option>
+              <option value="personale">🟢 Personale</option>
+              <option value="studio">🟠 Studio</option>
+              <option value="salute">🔴 Salute</option>
+              <option value="finanza">🟣 Finanza</option>
+              <option value="altro" selected>⚫ Altro</option>
             </select>
           </div>
         </div>

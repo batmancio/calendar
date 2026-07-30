@@ -4,7 +4,10 @@
       "Bash(mkdir -p \"/home/matteo-mancini/Desktop/App memo/tools\")",
       "Bash(node tools/generate-icons.js)",
       "Bash(file icons/*.png)",
-      "Bash(node --check js/app.js)"
+      "Bash(node --check js/app.js)",
+      "Read(//home/matteo-mancini/Desktop/App\\\\\\\\ memo/**)",
+      "Bash(grep -n \"toLocaleDateString\\\\|formatDateKey\\\\|date.*format\\\\|getDate\\\\|getDay\" /home/matteo-mancini/Desktop/App memo/js/app.js | head -20)",
+      "Read(//home/matteo-mancini/Desktop/**)"
     ],
     "additionalDirectories": [
       "/home/matteo-mancini/Desktop/App memo"

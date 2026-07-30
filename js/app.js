@@ -1101,7 +1101,7 @@
 
           const isChecked = task.status === 'completed';
           const catClass = task.category ? `cat-${task.category}` : 'cat-altro';
-          const dateLabel = task.dueDate ? `📅 ${task.dueDate}` : '📌 Sospeso (senza data)';
+          const dateLabel = task.dueDate ? `📅 ${formatDateShortItalian(task.dueDate)}` : '📌 Sospeso (senza data)';
 
           card.innerHTML = `
             <div class="catalog-card-header">
@@ -1237,6 +1237,17 @@
     return d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   }
 
+  function formatDateShortItalian(dateStr) {
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+
+  function formatTimeItalian(timeStr) {
+    if (!timeStr || timeStr.length !== 5) return timeStr;
+    return timeStr;
+  }
+
   // ==========================================
   // 3. TASK & MEMO ENGINE
   // ==========================================
@@ -1303,7 +1314,7 @@
       });
 
       const isChecked = task.status === 'completed';
-      const dateText = task.dueDate ? `Data: ${task.dueDate}` : 'Memo Sospeso';
+      const dateText = task.dueDate ? `Data: ${formatDateShortItalian(task.dueDate)}` : 'Memo Sospeso';
 
       card.innerHTML = `
         <div class="task-card-header">
@@ -1606,6 +1617,7 @@
     const timeStartInput = document.getElementById('eventTimeStart');
     const timeEndInput = document.getElementById('eventTimeEnd');
     const categoryInput = document.getElementById('eventCategory');
+    const recurrenceInput = document.getElementById('eventRecurrence');
     const descInput = document.getElementById('eventDescription');
     const deleteBtn = document.getElementById('deleteEventBtn');
 
@@ -1618,6 +1630,7 @@
       timeStartInput.value = initialData.timeStart || '09:00';
       timeEndInput.value = initialData.timeEnd || '10:00';
       categoryInput.value = initialData.category || 'lavoro';
+      recurrenceInput.value = initialData.recurrence || 'none';
       descInput.value = initialData.description || '';
       deleteBtn.classList.remove('hidden');
     } else {
@@ -1630,6 +1643,7 @@
       timeStartInput.value = '09:00';
       timeEndInput.value = '10:00';
       categoryInput.value = 'lavoro';
+      recurrenceInput.value = 'none';
       descInput.value = '';
       deleteBtn.classList.add('hidden');
     }
@@ -1649,6 +1663,7 @@
     const eventId = document.getElementById('eventId').value;
     const dateStart = document.getElementById('eventDate').value;
     const dateEnd = document.getElementById('eventDateEnd').value || dateStart;
+    const recurrence = document.getElementById('eventRecurrence').value || 'none';
 
     const eventData = {
       title: document.getElementById('eventTitle').value.trim(),
@@ -1657,16 +1672,61 @@
       timeStart: document.getElementById('eventTimeStart').value,
       timeEnd: document.getElementById('eventTimeEnd').value,
       category: document.getElementById('eventCategory').value,
-      description: document.getElementById('eventDescription').value.trim()
+      description: document.getElementById('eventDescription').value.trim(),
+      recurrence: recurrence
     };
 
     if (eventId) {
       AppState.updateEvent(eventId, eventData);
     } else {
-      AppState.addEvent(eventData);
+      if (recurrence !== 'none') {
+        const baseEvent = AppState.addEvent(eventData);
+        generateRecurringInstances(baseEvent, recurrence, 24);
+      } else {
+        AppState.addEvent(eventData);
+      }
     }
 
     closeModal('eventModal');
+  }
+
+  function generateRecurringInstances(baseEvent, recurrenceType, count) {
+    const startDate = new Date(baseEvent.date);
+
+    for (let i = 1; i <= count; i++) {
+      const newDate = new Date(startDate);
+
+      if (recurrenceType === 'daily') {
+        newDate.setDate(newDate.getDate() + i);
+      } else if (recurrenceType === 'weekly') {
+        newDate.setDate(newDate.getDate() + (7 * i));
+      } else if (recurrenceType === 'monthly') {
+        newDate.setMonth(newDate.getMonth() + i);
+      } else if (recurrenceType === 'yearly') {
+        newDate.setFullYear(newDate.getFullYear() + i);
+      }
+
+      const newDateStr = formatDateKey(newDate);
+      const newDateEndStr = baseEvent.dateEnd ?
+        formatDateKey(new Date(new Date(baseEvent.dateEnd).setTime(
+          new Date(baseEvent.dateEnd).getTime() -
+          new Date(baseEvent.date).getTime() +
+          newDate.getTime()
+        ))) : newDateStr;
+
+      const instance = {
+        ...baseEvent,
+        id: 'evt_' + Date.now() + '_' + i,
+        date: newDateStr,
+        dateEnd: newDateEndStr,
+        recurrenceParentId: baseEvent.id,
+        recurrence: 'none'
+      };
+
+      AppState.events.push(instance);
+    }
+
+    AppState.saveToStorage();
   }
 
   function openTaskModal(initialData = {}) {
@@ -1928,6 +1988,7 @@
     const feedbackModal = document.getElementById('feedbackModal');
     const feedbackForm = document.getElementById('feedbackForm');
     const refreshAdminFeedbacksBtn = document.getElementById('refreshAdminFeedbacksBtn');
+    const toggleSidebarMobileBtn = document.getElementById('toggleSidebarMobileBtn');
 
     if (userInfoBadge && accountDropdownMenu) {
       userInfoBadge.addEventListener('click', (e) => {
@@ -1942,6 +2003,14 @@
           userInfoBadge.classList.remove('active');
         }
       });
+
+      // Mobile: hamburger menu opens account dropdown
+      if (toggleSidebarMobileBtn) {
+        toggleSidebarMobileBtn.addEventListener('click', () => {
+          accountDropdownMenu.classList.toggle('hidden');
+          userInfoBadge.classList.toggle('active');
+        });
+      }
     }
 
     if (triggerPhotoUploadBtn && profileImageInput) {
@@ -2076,15 +2145,10 @@
       });
     }
 
-    const toggleSidebarMobileBtn = document.getElementById('toggleSidebarMobileBtn');
     const closeSidebarMobileBtn = document.getElementById('closeSidebarMobileBtn');
     const appSidebar = document.getElementById('appSidebar');
 
-    if (toggleSidebarMobileBtn && appSidebar) {
-      toggleSidebarMobileBtn.addEventListener('click', () => {
-        appSidebar.classList.add('open-mobile');
-      });
-    }
+    // toggleSidebarMobileBtn now opens account dropdown instead of sidebar (handled below)
 
     if (closeSidebarMobileBtn && appSidebar) {
       closeSidebarMobileBtn.addEventListener('click', () => {
@@ -2358,14 +2422,7 @@
       });
     }
 
-    // Enhance existing sidebar toggle to also show/hide overlay
-    const toggleSidebarMobileBtn = document.getElementById('toggleSidebarMobileBtn');
-    if (toggleSidebarMobileBtn) {
-      // Remove old listener is not easy, so we add the overlay toggle
-      toggleSidebarMobileBtn.addEventListener('click', () => {
-        openMobileSidebar();
-      });
-    }
+    // toggleSidebarMobileBtn now opens account dropdown (defined earlier with userInfoBadge handler)
 
     const closeSidebarMobileBtn = document.getElementById('closeSidebarMobileBtn');
     if (closeSidebarMobileBtn) {
