@@ -4,7 +4,7 @@
  * completo per /api/* e per richieste cross-origin (es. Google Fonts).
  */
 
-const CACHE_NAME = 'planner-shell-v3';
+const CACHE_NAME = 'planner-shell-v4';
 
 const PRECACHE_URLS = [
   './',
@@ -19,6 +19,12 @@ const PRECACHE_URLS = [
   './icons/icon-192.png',
   './icons/icon-512.png'
 ];
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

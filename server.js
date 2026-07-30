@@ -16,6 +16,16 @@ const DB_FILE_PATH = path.join(__dirname, 'chronos_db.json');
 const app = express();
 app.use(cors({ origin: '*' })); // Abilita CORS per l'accesso mobile/PWA
 app.use(express.json());
+// Disabilita la cache HTTP per Service Worker e Manifest per garantire l'aggiornamento immediato PWA su iOS
+app.use((req, res, next) => {
+  if (req.url === '/sw.js' || req.url === '/manifest.json' || req.path === '/sw.js' || req.path === '/manifest.json') {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+  next();
+});
+
 app.use(express.static(path.join(__dirname)));
 
 // ==========================================

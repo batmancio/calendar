@@ -19,15 +19,40 @@
   const NOTIFIED_STORAGE_KEY = 'chronos_notified_ids_v1';
 
   if ('serviceWorker' in navigator) {
+    let refreshing = false;
+
+    // Ricarica automaticamente la pagina se un nuovo Service Worker prende il controllo (es. nuovi commit)
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
+      }
+    });
+
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js').then(reg => {
+        // Controllo proattivo degli aggiornamenti all'avvio
+        reg.update().catch(() => {});
+
+        // Controllo degli aggiornamenti ogni volta che la PWA torna in primo piano (es. su iPhone)
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            reg.update().catch(() => {});
+          }
+        });
+
         reg.addEventListener('updatefound', () => {
           const newWorker = reg.installing;
           if (newWorker) {
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
                 if (typeof showToast === 'function') {
-                  showToast('Nuova versione disponibile! Ricarica la pagina per aggiornare.', 'info');
+                  showToast('Nuova versione applicata! Aggiornamento in corso...', 'info', {
+                    actionLabel: 'Aggiorna ora',
+                    duration: 6000,
+                    onAction: () => window.location.reload()
+                  });
                 }
               }
             });
