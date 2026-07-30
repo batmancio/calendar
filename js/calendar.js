@@ -28,6 +28,15 @@ export function renderCalendar() {
     currentMonthYearLabel.textContent = `${MONTH_NAMES_IT[month]} ${year}`;
   }
 
+  const todayBtn = document.getElementById('todayBtn');
+  if (todayBtn) {
+    const now = new Date();
+    const todayDay = now.getDate();
+    const todayMonthName = MONTH_NAMES_IT[now.getMonth()];
+    todayBtn.textContent = `${todayDay} ${todayMonthName}`;
+    todayBtn.title = `Torna a Oggi (${todayDay} ${todayMonthName})`;
+  }
+
   // Gestione visibilità Viste
   if (AppState.currentView === 'month') {
     viewMonthContainer.classList.remove('hidden');
@@ -146,10 +155,21 @@ function renderMonthGrid(container, year, month) {
       evtEl.className = `cell-item event-item ${catClass} ${info.classes}`;
       evtEl.dataset.eventId = evt.id;
 
-      const timeStr = evt.timeStart ? formatTime24h(evt.timeStart) : '';
-      const timeDisplay = timeStr ? `<span class="time">${timeStr}</span> ` : '';
-
-      evtEl.innerHTML = `${info.prefix}${info.dayBadge}${timeDisplay}${escapeHtml(evt.title)}${info.suffix}`;
+      if (info.isMultiDay) {
+        if (info.isFirstDay) {
+          evtEl.innerHTML = `<span class="multiday-label-start"><span class="badge-text-start">Inizio: </span><span class="badge-icon-start">▶ </span>${escapeHtml(evt.title)}</span>`;
+        } else if (info.isRowStart && !info.isFirstDay) {
+          evtEl.innerHTML = `<span class="multiday-label-cont"><span class="multi-day-arrow">◀ </span>${escapeHtml(evt.title)}</span>`;
+        } else if (info.isLastDay) {
+          evtEl.innerHTML = `<span class="multiday-label-end"><span class="badge-text-end">Fine: </span><span class="badge-icon-end">🏁 </span>${escapeHtml(evt.title)}</span>`;
+        } else {
+          evtEl.innerHTML = `<span class="multiday-bar-clean"></span>`;
+        }
+      } else {
+        const timeStr = evt.timeStart ? formatTime24h(evt.timeStart) : '';
+        const timeDisplay = timeStr ? `<span class="time">${timeStr}</span> ` : '';
+        evtEl.innerHTML = `${timeDisplay}${escapeHtml(evt.title)}`;
+      }
 
       // Hover / Touch sync highlight per tutti i giorni dello stesso evento
       evtEl.addEventListener('mouseenter', () => highlightEventSync(evt.id, true));
@@ -392,50 +412,52 @@ function escapeHtml(str) {
   return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+function getMultiDayThemeClass(evt) {
+  if (!evt || !evt.id) return 'multiday-theme-1';
+  let hash = 0;
+  for (let i = 0; i < evt.id.length; i++) {
+    hash = (hash << 5) - hash + evt.id.charCodeAt(i);
+    hash |= 0;
+  }
+  const themeIndex = (Math.abs(hash) % 8) + 1;
+  return `multiday-theme-${themeIndex}`;
+}
+
 function getMultiDayInfo(evt, cellDateStr, cellIndex) {
   const startDateStr = evt.date;
   const endDateStr = evt.dateEnd || evt.date;
   const isMultiDay = endDateStr !== startDateStr;
   if (!isMultiDay) {
-    return { isMultiDay: false, classes: '', prefix: '', suffix: '', dayBadge: '' };
+    return { isMultiDay: false, classes: '', isFirstDay: false, isLastDay: false, isMiddleDay: false };
   }
-
-  const startDate = new Date(startDateStr);
-  const endDate = new Date(endDateStr);
-  const cellDate = new Date(cellDateStr);
-
-  const totalTime = endDate.getTime() - startDate.getTime();
-  const totalDays = Math.round(totalTime / (1000 * 3600 * 24)) + 1;
-
-  const currentTime = cellDate.getTime() - startDate.getTime();
-  const currentDayIndex = Math.round(currentTime / (1000 * 3600 * 24)) + 1;
 
   const isFirstDay = cellDateStr === startDateStr;
   const isLastDay = cellDateStr === endDateStr;
-
   const isRowStart = cellIndex % 7 === 0;
   const isRowEnd = cellIndex % 7 === 6;
 
-  let classes = 'multi-day-item';
+  const themeClass = getMultiDayThemeClass(evt);
+  let classes = `multi-day-item ${themeClass}`;
+
   if (isFirstDay) classes += ' multi-day-start';
   else if (isLastDay) classes += ' multi-day-end';
   else classes += ' multi-day-middle';
 
-  let prefix = '';
-  let suffix = '';
+  if (!isFirstDay && isRowStart) classes += ' multi-day-continue-left';
+  if (!isLastDay && isRowEnd) classes += ' multi-day-continue-right';
 
-  if (!isFirstDay && isRowStart) {
-    classes += ' multi-day-continue-left';
-    prefix = '<span class="multi-day-arrow">◀</span>';
-  }
-  if (!isLastDay && isRowEnd) {
-    classes += ' multi-day-continue-right';
-    suffix = '<span class="multi-day-arrow">▶</span>';
-  }
+  const isMiddleDay = !isFirstDay && !isLastDay && !isRowStart;
 
-  const dayBadge = `<small style="font-size:0.65rem; opacity:0.85; margin-right:3px; font-weight:600;">${currentDayIndex}/${totalDays}</small>`;
-
-  return { isMultiDay: true, classes, prefix, suffix, dayBadge };
+  return {
+    isMultiDay: true,
+    classes,
+    isFirstDay,
+    isLastDay,
+    isRowStart,
+    isRowEnd,
+    isMiddleDay,
+    themeClass
+  };
 }
 
 function highlightEventSync(eventId, enable) {
