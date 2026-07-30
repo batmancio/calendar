@@ -1113,11 +1113,12 @@
           eventsContainer.appendChild(overflowEl);
         }
 
-      cell.appendChild(eventsContainer);
-        setupCellDragAndDrop(cell, cellDateStr);
+        cell.appendChild(eventsContainer);
+      });
 
-        container.appendChild(cell);
-      }
+      setupCellDragAndDrop(cell, cellDateStr);
+      container.appendChild(cell);
+    }
   }
 
     function setupCellDragAndDrop(cell, dateStr) {

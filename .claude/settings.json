@@ -7,7 +7,8 @@
       "Bash(node --check js/app.js)",
       "Read(//home/matteo-mancini/Desktop/App\\\\\\\\ memo/**)",
       "Bash(grep -n \"toLocaleDateString\\\\|formatDateKey\\\\|date.*format\\\\|getDate\\\\|getDay\" /home/matteo-mancini/Desktop/App memo/js/app.js | head -20)",
-      "Read(//home/matteo-mancini/Desktop/**)"
+      "Read(//home/matteo-mancini/Desktop/**)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin123\"}')"
     ],
     "additionalDirectories": [
       "/home/matteo-mancini/Desktop/App memo"
