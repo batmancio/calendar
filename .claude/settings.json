@@ -3,7 +3,8 @@
     "allow": [
       "Bash(mkdir -p \"/home/matteo-mancini/Desktop/App memo/tools\")",
       "Bash(node tools/generate-icons.js)",
-      "Bash(file icons/*.png)"
+      "Bash(file icons/*.png)",
+      "Bash(node --check js/app.js)"
     ],
     "additionalDirectories": [
       "/home/matteo-mancini/Desktop/App memo"
