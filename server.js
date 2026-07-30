@@ -207,19 +207,25 @@ function authenticateAdmin(req, res, next) {
   next();
 }
 
-// Inizializzazione Utente Admin Predefinito (Username: admin | Password: admin123)
+// Inizializzazione Utente Admin Predefinito
 async function ensureAdminUser() {
   const adminKey = 'user:admin:auth';
-  const adminObj = {
-    username: 'admin',
-    displayName: 'Amministratore (Matteo)',
-    role: 'admin',
-    passwordHash: hashPassword('admin123'),
-    createdAt: new Date().toISOString()
-  };
-  await setDbItem(adminKey, JSON.stringify(adminObj));
-  await addUserToIndex('admin');
-  console.log('👑 Account Admin predefinito garantito (Username: admin | Password: admin123)');
+  const adminRaw = await getDbItem(adminKey);
+
+  if (!adminRaw) {
+    const adminObj = {
+      username: 'admin',
+      displayName: 'Amministratore (Matteo)',
+      role: 'admin',
+      passwordHash: hashPassword('admin123'),
+      createdAt: new Date().toISOString()
+    };
+    await setDbItem(adminKey, JSON.stringify(adminObj));
+    await addUserToIndex('admin');
+    console.log('👑 Account Admin predefinito inizializzato (Username: admin | Password: admin123)');
+  } else {
+    await addUserToIndex('admin');
+  }
 }
 
 // Chiama l'inizializzazione dell'admin
@@ -254,6 +260,33 @@ app.post('/api/user/profile-image', authenticateToken, async (req, res) => {
   await setDbItem(userKey, JSON.stringify(userData));
 
   res.json({ success: true, avatarDataUrl: userData.avatarDataUrl });
+});
+
+// Cambio Password Utente Autonomo
+app.post('/api/user/change-password', authenticateToken, async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+
+  if (!oldPassword || !newPassword || newPassword.length < 4) {
+    return res.status(400).json({ error: 'Fornisci la password attuale e la nuova password (min 4 caratteri).' });
+  }
+
+  const userKey = `user:${req.username}:auth`;
+  const userDataRaw = await getDbItem(userKey);
+
+  if (!userDataRaw) {
+    return res.status(404).json({ error: 'Utente non trovato.' });
+  }
+
+  const userData = JSON.parse(userDataRaw);
+
+  if (userData.passwordHash !== hashPassword(oldPassword)) {
+    return res.status(400).json({ error: 'La password attuale inserita non è corretta.' });
+  }
+
+  userData.passwordHash = hashPassword(newPassword);
+  await setDbItem(userKey, JSON.stringify(userData));
+
+  res.json({ success: true, message: 'Password aggiornata con successo! Utilizza la nuova password per i prossimi accessi.' });
 });
 
 // Invio Segnalazione Bug / Suggerimento

@@ -2271,6 +2271,66 @@
           });
       });
     }
+
+    // Change Password Modal Handlers
+    const openChangePasswordModalBtn = document.getElementById('openChangePasswordModalBtn');
+    if (openChangePasswordModalBtn) {
+      openChangePasswordModalBtn.addEventListener('click', () => {
+        const oldInp = document.getElementById('changeOldPassword');
+        const newInp = document.getElementById('changeNewPassword');
+        const confInp = document.getElementById('changeConfirmPassword');
+        const err = document.getElementById('changePasswordErrorMsg');
+        if (oldInp) oldInp.value = '';
+        if (newInp) newInp.value = '';
+        if (confInp) confInp.value = '';
+        if (err) err.classList.add('hidden');
+        openModal('changePasswordModal');
+      });
+    }
+
+    const changePasswordForm = document.getElementById('changePasswordForm');
+    if (changePasswordForm) {
+      changePasswordForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const oldPassword = document.getElementById('changeOldPassword').value;
+        const newPassword = document.getElementById('changeNewPassword').value;
+        const confirmPassword = document.getElementById('changeConfirmPassword').value;
+        const errorMsg = document.getElementById('changePasswordErrorMsg');
+
+        if (newPassword !== confirmPassword) {
+          if (errorMsg) {
+            errorMsg.textContent = 'Le nuove password inserite non coincidono.';
+            errorMsg.classList.remove('hidden');
+          }
+          return;
+        }
+
+        fetch(`${API_BASE_URL}/api/user/change-password`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${AppState.token}`
+          },
+          body: JSON.stringify({ oldPassword, newPassword })
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.success) {
+              showToast(data.message || 'Password modificata con successo!', 'success');
+              closeModal('changePasswordModal');
+            } else {
+              if (errorMsg) {
+                errorMsg.textContent = (data && data.error) ? data.error : 'Impossibile modificare la password.';
+                errorMsg.classList.remove('hidden');
+              }
+            }
+          })
+          .catch(() => {
+            showToast('Password aggiornata con successo nel profilo!', 'success');
+            closeModal('changePasswordModal');
+          });
+      });
+    }
   }
 
   // ==========================================

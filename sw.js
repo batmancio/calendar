@@ -4,7 +4,7 @@
  * completo per /api/* e per richieste cross-origin (es. Google Fonts).
  */
 
-const CACHE_NAME = 'planner-shell-v9';
+const CACHE_NAME = 'planner-shell-v10';
 
 const PRECACHE_URLS = [
   './',
