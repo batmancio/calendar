@@ -1573,7 +1573,8 @@ body {
 
   /* --- Layout adjustment for bottom nav --- */
   .app-container {
-    height: calc(100vh - 64px);
+    height: 100dvh;
+    min-height: 100dvh;
   }
 
   /* --- Header: Compact Single Row --- */
@@ -1755,7 +1756,7 @@ body {
   /* --- Calendar Grid Mobile — Optimized --- */
   .view-container {
     padding: 8px 6px;
-    padding-bottom: 12px;
+    padding-bottom: calc(85px + env(safe-area-inset-bottom, 0px));
   }
 
   .calendar-days-header {
@@ -1953,17 +1954,21 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 64px;
-    background: rgba(255, 255, 255, 0.88);
+    height: calc(62px + env(safe-area-inset-bottom, 0px));
+    min-height: calc(62px + env(safe-area-inset-bottom, 0px));
+    background: rgba(255, 255, 255, 0.94);
     backdrop-filter: blur(16px) saturate(180%);
     -webkit-backdrop-filter: blur(16px) saturate(180%);
     border-top: 1px solid rgba(226, 232, 240, 0.7);
     z-index: 130;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-around;
-    padding: 0 4px;
+    padding-top: 4px;
+    padding-left: 4px;
+    padding-right: 4px;
     padding-bottom: env(safe-area-inset-bottom, 0px);
     box-shadow: 0 -2px 16px rgba(15, 23, 42, 0.06);
+    box-sizing: border-box;
   }
 
   .bottom-nav-item {
@@ -2048,7 +2053,7 @@ body {
   .fab-speed-dial {
     display: flex !important;
     position: fixed;
-    bottom: 80px;
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
     right: 50%;
     transform: translateX(50%);
     flex-direction: column;

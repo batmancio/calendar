@@ -49,6 +49,22 @@
     return `${year}-${month}-${day}`;
   }
 
+  function getDatesInRange(startStr, endStr) {
+    if (!startStr) return [];
+    const finalEndStr = (endStr && endStr >= startStr) ? endStr : startStr;
+    const dates = [];
+    const [sy, sm, sd] = startStr.split('-').map(Number);
+    const [ey, em, ed] = finalEndStr.split('-').map(Number);
+    const curr = new Date(sy, sm - 1, sd);
+    const last = new Date(ey, em - 1, ed);
+
+    while (curr <= last) {
+      dates.push(formatDateKey(curr));
+      curr.setDate(curr.getDate() + 1);
+    }
+    return dates;
+  }
+
   function escapeHtml(str) {
     return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
@@ -143,7 +159,11 @@
       markNotified(tag);
     };
 
-    AppState.events.filter(e => e.date === todayStr).forEach(e => {
+    AppState.events.filter(e => {
+      const start = e.date;
+      const end = e.dateEnd || e.date;
+      return start <= todayStr && end >= todayStr;
+    }).forEach(e => {
       showNotif('Evento di oggi', `${e.title}${e.timeStart ? ' alle ' + e.timeStart : ''}`, `event_${e.id}_${todayStr}`);
     });
 
@@ -996,14 +1016,44 @@
 
     AppState.events.forEach(evt => {
       if (AppState.filterCategory !== 'all' && evt.category !== AppState.filterCategory) return;
-      if (!itemsByDate[evt.date]) itemsByDate[evt.date] = [];
-      itemsByDate[evt.date].push({ type: 'event', data: evt });
+      if (AppState.searchQuery.trim()) {
+        const q = AppState.searchQuery.toLowerCase();
+        const matchTitle = evt.title.toLowerCase().includes(q);
+        const matchDesc = evt.description && evt.description.toLowerCase().includes(q);
+        if (!matchTitle && !matchDesc) return;
+      }
+
+      const startDateStr = evt.date;
+      const endDateStr = evt.dateEnd || evt.date;
+      const dates = getDatesInRange(startDateStr, endDateStr);
+      const isMultiDay = dates.length > 1;
+
+      dates.forEach((dStr, idx) => {
+        if (!itemsByDate[dStr]) itemsByDate[dStr] = [];
+        itemsByDate[dStr].push({
+          type: 'event',
+          data: evt,
+          multiDay: {
+            isMultiDay,
+            dayIndex: idx + 1,
+            totalDays: dates.length,
+            isFirstDay: idx === 0,
+            isLastDay: idx === dates.length - 1
+          }
+        });
+      });
     });
 
     AppState.tasks.forEach(task => {
       if (task.dueDate) {
         if (AppState.filterCategory !== 'all' && task.category !== AppState.filterCategory) return;
         if (AppState.filterUrgency !== 'all' && task.urgency !== AppState.filterUrgency) return;
+        if (AppState.searchQuery.trim()) {
+          const q = AppState.searchQuery.toLowerCase();
+          const matchTitle = task.title.toLowerCase().includes(q);
+          const matchDesc = task.description && task.description.toLowerCase().includes(q);
+          if (!matchTitle && !matchDesc) return;
+        }
         if (!itemsByDate[task.dueDate]) itemsByDate[task.dueDate] = [];
         itemsByDate[task.dueDate].push({ type: 'task', data: task });
       }
@@ -1034,11 +1084,30 @@
         if (item.type === 'event') {
           const evt = item.data;
           const catClass = evt.category ? `cat-${evt.category}` : 'cat-lavoro';
-          const timeFormatted = evt.timeStart ? (formatTimeItalian(evt.timeStart) + (evt.timeEnd ? ' - ' + formatTimeItalian(evt.timeEnd) : '')) : 'Tutto il giorno';
+          const md = item.multiDay;
+
+          let timeFormatted = 'Tutto il giorno';
+          if (md && md.isMultiDay) {
+            if (md.isFirstDay) {
+              timeFormatted = evt.timeStart ? `Dalle ${formatTimeItalian(evt.timeStart)} (Inizio)` : 'Giorno d\'inizio';
+            } else if (md.isLastDay) {
+              timeFormatted = evt.timeEnd ? `Fino alle ${formatTimeItalian(evt.timeEnd)} (Fine)` : 'Giorno di fine';
+            } else {
+              timeFormatted = 'Tutto il giorno';
+            }
+          } else {
+            timeFormatted = evt.timeStart ? (formatTimeItalian(evt.timeStart) + (evt.timeEnd ? ' - ' + formatTimeItalian(evt.timeEnd) : '')) : 'Tutto il giorno';
+          }
+
+          const multiDayBadge = (md && md.isMultiDay) ? `<span style="font-size: 0.7rem; background: rgba(99,102,241,0.15); color: var(--accent-primary, #6366f1); padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: 600;">Giorno ${md.dayIndex}/${md.totalDays}</span>` : '';
+
           itemCard.innerHTML = `
             <div>
-              <strong style="color: var(--text-main); font-size: 0.88rem;">${escapeHtml(evt.title)}</strong>
-              <div style="font-size: 0.75rem; color: var(--text-muted);">${timeFormatted}</div>
+              <div style="display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
+                <strong style="color: var(--text-main); font-size: 0.88rem;">${escapeHtml(evt.title)}</strong>
+                ${multiDayBadge}
+              </div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">${timeFormatted}</div>
             </div>
             <span class="cat-badge ${catClass}">${capitalize(evt.category || 'evento')}</span>
           `;
@@ -1738,6 +1807,19 @@
       if (eventCustomInput) eventCustomInput.value = '';
     }
 
+    if (dateEndInput && dateInput) {
+      dateEndInput.min = dateInput.value;
+      if (!dateInput.dataset.minListenerAttached) {
+        dateInput.dataset.minListenerAttached = 'true';
+        dateInput.addEventListener('change', () => {
+          dateEndInput.min = dateInput.value;
+          if (dateEndInput.value && dateEndInput.value < dateInput.value) {
+            dateEndInput.value = dateInput.value;
+          }
+        });
+      }
+    }
+
     openModal('eventModal');
   }
 
@@ -1745,7 +1827,10 @@
     e.preventDefault();
     const eventId = document.getElementById('eventId').value;
     const dateStart = document.getElementById('eventDate').value;
-    const dateEnd = document.getElementById('eventDateEnd').value || dateStart;
+    let dateEnd = document.getElementById('eventDateEnd').value || dateStart;
+    if (dateEnd < dateStart) {
+      dateEnd = dateStart;
+    }
     const recurrence = document.getElementById('eventRecurrence').value || 'none';
 
     let selectedCat = document.getElementById('eventCategory').value;

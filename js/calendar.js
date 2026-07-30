@@ -218,6 +218,22 @@ function setupCellDragAndDrop(cell, dateStr) {
   });
 }
 
+function getDatesInRange(startStr, endStr) {
+  if (!startStr) return [];
+  const finalEndStr = (endStr && endStr >= startStr) ? endStr : startStr;
+  const dates = [];
+  const [sy, sm, sd] = startStr.split('-').map(Number);
+  const [ey, em, ed] = finalEndStr.split('-').map(Number);
+  const curr = new Date(sy, sm - 1, sd);
+  const last = new Date(ey, em - 1, ed);
+
+  while (curr <= last) {
+    dates.push(formatDateKey(curr));
+    curr.setDate(curr.getDate() + 1);
+  }
+  return dates;
+}
+
 // Rendering Vista Agenda
 function renderAgendaList(container) {
   if (!container) return;
@@ -227,12 +243,45 @@ function renderAgendaList(container) {
   const itemsByDate = {};
 
   AppState.events.forEach(evt => {
-    if (!itemsByDate[evt.date]) itemsByDate[evt.date] = [];
-    itemsByDate[evt.date].push({ type: 'event', data: evt });
+    if (AppState.filterCategory && AppState.filterCategory !== 'all' && evt.category !== AppState.filterCategory) return;
+    if (AppState.searchQuery && AppState.searchQuery.trim()) {
+      const q = AppState.searchQuery.toLowerCase();
+      const matchTitle = evt.title.toLowerCase().includes(q);
+      const matchDesc = evt.description && evt.description.toLowerCase().includes(q);
+      if (!matchTitle && !matchDesc) return;
+    }
+
+    const startDateStr = evt.date;
+    const endDateStr = evt.dateEnd || evt.date;
+    const dates = getDatesInRange(startDateStr, endDateStr);
+    const isMultiDay = dates.length > 1;
+
+    dates.forEach((dStr, idx) => {
+      if (!itemsByDate[dStr]) itemsByDate[dStr] = [];
+      itemsByDate[dStr].push({
+        type: 'event',
+        data: evt,
+        multiDay: {
+          isMultiDay,
+          dayIndex: idx + 1,
+          totalDays: dates.length,
+          isFirstDay: idx === 0,
+          isLastDay: idx === dates.length - 1
+        }
+      });
+    });
   });
 
   AppState.tasks.forEach(task => {
     if (task.dueDate) {
+      if (AppState.filterCategory && AppState.filterCategory !== 'all' && task.category !== AppState.filterCategory) return;
+      if (AppState.filterUrgency && AppState.filterUrgency !== 'all' && task.urgency !== AppState.filterUrgency) return;
+      if (AppState.searchQuery && AppState.searchQuery.trim()) {
+        const q = AppState.searchQuery.toLowerCase();
+        const matchTitle = task.title.toLowerCase().includes(q);
+        const matchDesc = task.description && task.description.toLowerCase().includes(q);
+        if (!matchTitle && !matchDesc) return;
+      }
       if (!itemsByDate[task.dueDate]) itemsByDate[task.dueDate] = [];
       itemsByDate[task.dueDate].push({ type: 'task', data: task });
     }
@@ -262,15 +311,34 @@ function renderAgendaList(container) {
 
       if (item.type === 'event') {
         const evt = item.data;
-        const timeFormatted = evt.timeStart ? (formatTime24h(evt.timeStart) + (evt.timeEnd ? ' - ' + formatTime24h(evt.timeEnd) : '')) : 'Tutto il giorno';
+        const md = item.multiDay;
+
+        let timeFormatted = 'Tutto il giorno';
+        if (md && md.isMultiDay) {
+          if (md.isFirstDay) {
+            timeFormatted = evt.timeStart ? `Dalle ${formatTime24h(evt.timeStart)} (Inizio)` : 'Giorno d\'inizio';
+          } else if (md.isLastDay) {
+            timeFormatted = evt.timeEnd ? `Fino alle ${formatTime24h(evt.timeEnd)} (Fine)` : 'Giorno di fine';
+          } else {
+            timeFormatted = 'Tutto il giorno';
+          }
+        } else {
+          timeFormatted = evt.timeStart ? (formatTime24h(evt.timeStart) + (evt.timeEnd ? ' - ' + formatTime24h(evt.timeEnd) : '')) : 'Tutto il giorno';
+        }
+
+        const multiDayBadge = (md && md.isMultiDay) ? `<span style="font-size: 0.7rem; background: rgba(99,102,241,0.15); color: var(--accent-primary, #6366f1); padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: 600;">Giorno ${md.dayIndex}/${md.totalDays}</span>` : '';
+
         itemCard.innerHTML = `
           <div>
-            <strong style="color: var(--text-main);">${escapeHtml(evt.title)}</strong>
-            <div style="font-size: 0.78rem; color: var(--text-muted);">${timeFormatted} | Categoria: ${evt.category}</div>
+            <div style="display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
+              <strong style="color: var(--text-main);">${escapeHtml(evt.title)}</strong>
+              ${multiDayBadge}
+            </div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top:2px;">${timeFormatted} | Categoria: ${evt.category}</div>
           </div>
           <span class="urgency-badge" style="background: rgba(99,102,241,0.2); color: var(--accent-primary);">Evento</span>
         `;
-        itemCard.addEventListener('click', () => openEventDetailModal(evt));
+        itemCard.addEventListener('click', () => openEventDetailModal ? openEventDetailModal(evt) : openEventModal(evt));
       } else {
         const task = item.data;
         itemCard.innerHTML = `
@@ -280,7 +348,7 @@ function renderAgendaList(container) {
           </div>
           <span class="urgency-badge ${task.urgency}">${task.urgency}</span>
         `;
-        itemCard.addEventListener('click', () => openTaskDetailModal(task));
+        itemCard.addEventListener('click', () => openTaskDetailModal ? openTaskDetailModal(task) : openTaskModal(task));
       }
 
       itemsContainer.appendChild(itemCard);
