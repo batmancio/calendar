@@ -2211,7 +2211,8 @@ body {
   }
 
   .mobile-bottom-nav {
-    height: 60px;
+    height: calc(60px + env(safe-area-inset-bottom, 0px));
+    min-height: calc(60px + env(safe-area-inset-bottom, 0px));
   }
 
   .bottom-nav-fab {

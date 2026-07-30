@@ -4,7 +4,7 @@
  * completo per /api/* e per richieste cross-origin (es. Google Fonts).
  */
 
-const CACHE_NAME = 'planner-shell-v2';
+const CACHE_NAME = 'planner-shell-v3';
 
 const PRECACHE_URLS = [
   './',
@@ -50,28 +50,64 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.includes('/api/')) return;
 
+  // Stale-while-revalidate per lo shell dell'app
   event.respondWith(
-    caches.match(req).then(cached => {
-      if (cached) return cached;
-      return fetch(req).then(response => {
-        if (response && response.status === 200 && response.type === 'basic') {
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(req, responseToCache));
-        }
-        return response;
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.match(req).then(cachedResponse => {
+        const fetchPromise = fetch(req).then(networkResponse => {
+          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+            cache.put(req, networkResponse.clone());
+          }
+          return networkResponse;
+        }).catch(() => cachedResponse);
+
+        return cachedResponse || fetchPromise;
       });
     }).catch(() => caches.match('./index.html'))
   );
 });
 
+self.addEventListener('push', (event) => {
+  let data = {
+    title: 'Notifica Chronos',
+    body: 'Hai un nuovo evento o promemoria in programma.',
+    icon: 'icons/icon-192.png',
+    badge: 'icons/icon-192.png',
+    tag: `push_${Date.now()}`
+  };
+
+  if (event.data) {
+    try {
+      data = { ...data, ...event.data.json() };
+    } catch (e) {
+      data.body = event.data.text() || data.body;
+    }
+  }
+
+  const options = {
+    body: data.body,
+    icon: data.icon || 'icons/icon-192.png',
+    badge: data.badge || 'icons/icon-192.png',
+    tag: data.tag || 'chronos_push',
+    renotify: true,
+    data: { url: data.url || './' }
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  const targetUrl = (event.notification.data && event.notification.data.url) || './';
   event.waitUntil(
-    self.clients.matchAll({ type: 'window' }).then(clientList => {
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
       for (const client of clientList) {
         if ('focus' in client) return client.focus();
       }
-      if (self.clients.openWindow) return self.clients.openWindow('./');
+      if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
     })
   );
 });
+

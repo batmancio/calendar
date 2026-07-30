@@ -175,6 +175,93 @@
       });
   }
 
+  // --- Web Push Helpers per Notifiche ad App Chiusa ---
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
+  async function setupPushNotifications() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      throw new Error('Le notifiche Push non sono supportate su questo browser.');
+    }
+
+    if (!AppState.token) {
+      showToast('Accedi al tuo account per abilitare le notifiche Push ad app chiusa.', 'info');
+      return;
+    }
+
+    const res = await fetch(`${API_BASE_URL}/api/push/vapid-public-key`);
+    if (!res.ok) throw new Error('Servizio Notifiche Push temporaneamente non disponibile.');
+    const data = await res.json();
+    if (!data.success || !data.publicKey) throw new Error('Chiave pubblica VAPID non trovata.');
+
+    const reg = await navigator.serviceWorker.ready;
+    let subscription = await reg.pushManager.getSubscription();
+
+    if (!subscription) {
+      const convertedKey = urlBase64ToUint8Array(data.publicKey);
+      subscription = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: convertedKey
+      });
+    }
+
+    const subRes = await fetch(`${API_BASE_URL}/api/push/subscribe`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${AppState.token}`
+      },
+      body: JSON.stringify({ subscription })
+    });
+
+    if (subRes.ok) {
+      showToast('Notifiche Push in background attivate con successo!');
+    }
+  }
+
+  async function testPushNotification() {
+    if (!AppState.token) {
+      showToast('Accedi al tuo account per effettuare il test delle notifiche.', 'danger');
+      return;
+    }
+
+    if (Notification.permission !== 'granted') {
+      showToast('Abilita prima le Notifiche Push dal menu.', 'info');
+      return;
+    }
+
+    showToast('Invio notifica di prova in corso...');
+
+    try {
+      await setupPushNotifications();
+
+      const res = await fetch(`${API_BASE_URL}/api/push/test`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${AppState.token}`
+        }
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(data.message);
+      } else {
+        showToast(data.error || 'Errore invio notifica di prova.', 'danger');
+      }
+    } catch (e) {
+      showToast(e.message || 'Errore durante la prova notifiche.', 'danger');
+    }
+  }
+
   // ==========================================
   // 1. STATO GLOBALE (AppState) & REDIS SYNC
   // ==========================================
@@ -2610,26 +2697,63 @@
     });
 
     const enableNotifBtn = document.getElementById('enableNotificationsBtn');
-    if (enableNotifBtn) {
+    const enableNotifBtnText = document.getElementById('enableNotifBtnText');
+    const testPushBtn = document.getElementById('testPushNotificationBtn');
+
+    function updatePushUIState() {
       if (!('Notification' in window)) {
-        enableNotifBtn.classList.add('hidden');
+        if (enableNotifBtn) enableNotifBtn.classList.add('hidden');
+        if (testPushBtn) testPushBtn.classList.add('hidden');
+        return;
+      }
+      if (Notification.permission === 'granted') {
+        if (enableNotifBtnText) enableNotifBtnText.textContent = 'Notifiche Push Attive ✔️';
       } else {
-        enableNotifBtn.addEventListener('click', () => {
-          Notification.requestPermission().then(permission => {
-            if (permission === 'granted') {
-              showToast('Notifiche attivate.');
-              checkAndNotify();
-              setInterval(checkAndNotify, 5 * 60 * 1000);
-            } else {
-              showToast('Notifiche non abilitate.', 'danger');
+        if (enableNotifBtnText) enableNotifBtnText.textContent = 'Abilita Notifiche Push';
+      }
+    }
+
+    updatePushUIState();
+
+    if (enableNotifBtn) {
+      enableNotifBtn.addEventListener('click', () => {
+        if (!('Notification' in window)) {
+          showToast('Le notifiche non sono supportate da questo browser.', 'danger');
+          return;
+        }
+
+        Notification.requestPermission().then(async permission => {
+          if (permission === 'granted') {
+            updatePushUIState();
+            checkAndNotify();
+            setInterval(checkAndNotify, 5 * 60 * 1000);
+
+            try {
+              await setupPushNotifications();
+            } catch (err) {
+              console.warn('Avviso registrazione Push:', err);
+              showToast('Notifiche locali attive. Su iOS salva l\'app sulla Home per le notifiche ad app chiusa.');
             }
-          });
+          } else {
+            updatePushUIState();
+            showToast('Permesso notifiche negato.', 'danger');
+          }
         });
-        if (Notification.permission === 'granted') {
-          checkAndNotify();
-          setInterval(checkAndNotify, 5 * 60 * 1000);
+      });
+
+      if (Notification.permission === 'granted') {
+        checkAndNotify();
+        setInterval(checkAndNotify, 5 * 60 * 1000);
+        if (AppState.token) {
+          setupPushNotifications().catch(() => { });
         }
       }
+    }
+
+    if (testPushBtn) {
+      testPushBtn.addEventListener('click', () => {
+        testPushNotification();
+      });
     }
 
     renderCalendar();

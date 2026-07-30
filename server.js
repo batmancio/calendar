@@ -543,8 +543,261 @@ app.post('/api/sync', authenticateToken, async (req, res) => {
   res.json({ success: true, timestamp: Date.now(), cloudConnected: isRedisConnected });
 });
 
+// ==========================================
+// 5. GESTIONE NOTIFICHE WEB PUSH & SCHEDULER IN BACKGROUND
+// ==========================================
+let webPush = null;
+try {
+  webPush = require('web-push');
+} catch (e) {
+  console.warn('⚠️ web-push non ancora disponibile nel nodo locale.');
+}
+
+let vapidKeys = {
+  publicKey: process.env.VAPID_PUBLIC_KEY || null,
+  privateKey: process.env.VAPID_PRIVATE_KEY || null,
+  mailto: process.env.VAPID_MAILTO || 'mailto:matteo.mancini0619@gmail.com'
+};
+
+async function initVapidKeys() {
+  const storedKeysRaw = await getDbItem('vapid_keys');
+  if (storedKeysRaw) {
+    vapidKeys = { ...vapidKeys, ...JSON.parse(storedKeysRaw) };
+  } else if (webPush) {
+    try {
+      const generated = webPush.generateVAPIDKeys();
+      vapidKeys.publicKey = generated.publicKey;
+      vapidKeys.privateKey = generated.privateKey;
+      await setDbItem('vapid_keys', JSON.stringify(vapidKeys));
+    } catch (e) { }
+  }
+
+  if (webPush && vapidKeys.publicKey && vapidKeys.privateKey) {
+    try {
+      webPush.setVapidDetails(
+        vapidKeys.mailto,
+        vapidKeys.publicKey,
+        vapidKeys.privateKey
+      );
+      console.log('🔔 Modulo Web Push VAPID pronto ed operativo!');
+    } catch (err) {
+      console.warn('⚠️ Errore configurazione VAPID:', err.message);
+    }
+  }
+}
+setTimeout(initVapidKeys, 600);
+
+// Endpoint per recuperare la Chiave Pubblica VAPID
+app.get('/api/push/vapid-public-key', (req, res) => {
+  if (!vapidKeys.publicKey) {
+    return res.status(503).json({ error: 'Notifiche Push non pronte. VAPID keys non ancora generate.' });
+  }
+  res.json({ success: true, publicKey: vapidKeys.publicKey });
+});
+
+// Endpoint per salvare la Subscription dell'utente
+app.post('/api/push/subscribe', authenticateToken, async (req, res) => {
+  const { subscription } = req.body;
+  if (!subscription || !subscription.endpoint) {
+    return res.status(400).json({ error: 'Subscription non valida.' });
+  }
+
+  const username = req.username;
+  const subKey = `user:${username}:push_subscriptions`;
+  const existingRaw = await getDbItem(subKey);
+  let subscriptions = existingRaw ? JSON.parse(existingRaw) : [];
+
+  if (!subscriptions.some(s => s.endpoint === subscription.endpoint)) {
+    subscriptions.push(subscription);
+    await setDbItem(subKey, JSON.stringify(subscriptions));
+  }
+
+  res.json({ success: true, message: 'Iscrizione alle notifiche Push salvata con successo.' });
+});
+
+// Endpoint per disiscriversi dalle notifiche Push
+app.post('/api/push/unsubscribe', authenticateToken, async (req, res) => {
+  const { endpoint } = req.body;
+  if (!endpoint) return res.status(400).json({ error: 'Endpoint richiesto.' });
+
+  const username = req.username;
+  const subKey = `user:${username}:push_subscriptions`;
+  const existingRaw = await getDbItem(subKey);
+  if (existingRaw) {
+    let subscriptions = JSON.parse(existingRaw);
+    subscriptions = subscriptions.filter(s => s.endpoint !== endpoint);
+    await setDbItem(subKey, JSON.stringify(subscriptions));
+  }
+
+  res.json({ success: true, message: 'Disiscrizione notifiche Push completata.' });
+});
+
+// Endpoint Notifica di Prova
+app.post('/api/push/test', authenticateToken, async (req, res) => {
+  if (!webPush || !vapidKeys.publicKey) {
+    return res.status(503).json({ error: 'Modulo Web Push non ancora configurato sul server.' });
+  }
+
+  const username = req.username;
+  const subKey = `user:${username}:push_subscriptions`;
+  const existingRaw = await getDbItem(subKey);
+  const subscriptions = existingRaw ? JSON.parse(existingRaw) : [];
+
+  if (subscriptions.length === 0) {
+    return res.status(404).json({ error: 'Nessun dispositivo registrato per le notifiche Push su questo account. Abilita prima le notifiche dal menu.' });
+  }
+
+  const payload = JSON.stringify({
+    title: '🔔 Notifica di Prova Chronos',
+    body: 'Le Notifiche Push ad app chiusa funzionano perfettamente su questo dispositivo! 🎉',
+    icon: 'icons/icon-192.png',
+    badge: 'icons/icon-192.png',
+    url: '/'
+  });
+
+  let sentCount = 0;
+  const validSubscriptions = [];
+
+  for (const sub of subscriptions) {
+    try {
+      await webPush.sendNotification(sub, payload);
+      sentCount++;
+      validSubscriptions.push(sub);
+    } catch (err) {
+      if (err.statusCode === 410 || err.statusCode === 404) {
+        console.log(`🗑️ Rimozione subscription scaduta/revocata per @${username}`);
+      } else {
+        validSubscriptions.push(sub);
+        console.warn(`⚠️ Errore invio push notification:`, err.message);
+      }
+    }
+  }
+
+  await setDbItem(subKey, JSON.stringify(validSubscriptions));
+
+  if (sentCount > 0) {
+    res.json({ success: true, message: `Notifica di prova inviata a ${sentCount} dispositivo/i.` });
+  } else {
+    res.status(500).json({ error: 'Impossibile inviare la notifica di prova. Verifica i permessi notifiche nel browser o sul dispositivo.' });
+  }
+});
+
+// Helper Invio Push Generico ad un Utente
+async function sendPushToUser(username, title, body, tag = null) {
+  if (!webPush || !vapidKeys.publicKey) return;
+
+  const subKey = `user:${username}:push_subscriptions`;
+  const existingRaw = await getDbItem(subKey);
+  if (!existingRaw) return;
+
+  const subscriptions = JSON.parse(existingRaw);
+  if (!Array.isArray(subscriptions) || subscriptions.length === 0) return;
+
+  const payload = JSON.stringify({
+    title,
+    body,
+    icon: 'icons/icon-192.png',
+    badge: 'icons/icon-192.png',
+    tag: tag || `push_${Date.now()}`,
+    url: '/'
+  });
+
+  const validSubscriptions = [];
+  for (const sub of subscriptions) {
+    try {
+      await webPush.sendNotification(sub, payload);
+      validSubscriptions.push(sub);
+    } catch (err) {
+      if (err.statusCode !== 410 && err.statusCode !== 404) {
+        validSubscriptions.push(sub);
+      }
+    }
+  }
+
+  await setDbItem(subKey, JSON.stringify(validSubscriptions));
+}
+
+// Scheduler in Background (Controlla ogni minuto gli eventi imminenti)
+function startPushScheduler() {
+  setInterval(async () => {
+    if (!webPush || !vapidKeys.publicKey) return;
+
+    try {
+      const users = await getUsersIndex();
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const todayStr = `${year}-${month}-${day}`;
+
+      for (const username of users) {
+        const pushedKey = `user:${username}:pushed_tags_${todayStr}`;
+        const pushedRaw = await getDbItem(pushedKey);
+        const pushedTags = pushedRaw ? new Set(JSON.parse(pushedRaw)) : new Set();
+
+        const eventsRaw = await getDbItem(`user:${username}:events`);
+        const tasksRaw = await getDbItem(`user:${username}:tasks`);
+
+        const events = eventsRaw ? JSON.parse(eventsRaw) : [];
+        const tasks = tasksRaw ? JSON.parse(tasksRaw) : [];
+
+        // Eventi di Oggi con orario di inizio imminente (entro 15 min)
+        events.forEach(event => {
+          if (!event.date || event.date !== todayStr) return;
+          const tag = `event_${event.id}_${todayStr}`;
+          if (pushedTags.has(tag)) return;
+
+          let shouldNotify = false;
+          if (event.timeStart) {
+            const [eH, eM] = event.timeStart.split(':').map(Number);
+            const eventMinutes = eH * 60 + eM;
+            const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+            if (eventMinutes >= nowMinutes && (eventMinutes - nowMinutes) <= 15) {
+              shouldNotify = true;
+            }
+          } else {
+            if (now.getHours() >= 8) {
+              shouldNotify = true;
+            }
+          }
+
+          if (shouldNotify) {
+            const timeDesc = event.timeStart ? ` alle ${event.timeStart}` : '';
+            sendPushToUser(username, `📅 Evento di oggi: ${event.title}`, `${event.title}${timeDesc}${event.description ? ' - ' + event.description : ''}`, tag);
+            pushedTags.add(tag);
+          }
+        });
+
+        // Memo Critici in Scadenza
+        tasks.forEach(task => {
+          if (task.status === 'completed') return;
+          if (task.urgency !== 'critical') return;
+          if (!task.dueDate || task.dueDate > todayStr) return;
+
+          const tag = `task_${task.id}_${todayStr}`;
+          if (pushedTags.has(tag)) return;
+
+          if (now.getHours() >= 8) {
+            const label = task.dueDate < todayStr ? `${task.title} (Scaduto)` : `${task.title} (Scade oggi)`;
+            sendPushToUser(username, `🚨 Memo Critico in Scadenza`, label, tag);
+            pushedTags.add(tag);
+          }
+        });
+
+        await setDbItem(pushedKey, JSON.stringify(Array.from(pushedTags)));
+      }
+    } catch (e) {
+      console.error('Errore nello Push Scheduler:', e.message);
+    }
+  }, 60000);
+}
+
+setTimeout(startPushScheduler, 5000);
+
 // Avvio Server Cloud
 app.listen(PORT, () => {
   console.log(`🚀 Chronos Cloud Server attivo sulla porta ${PORT}`);
 });
+
 
