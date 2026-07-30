@@ -25,6 +25,7 @@ export const AppState = {
 
   events: [],
   tasks: [],
+  customCategories: [],
 
   listeners: [],
 
@@ -47,13 +48,16 @@ export const AppState = {
     try {
       const storedEvents = localStorage.getItem(STORAGE_KEY_EVENTS);
       const storedTasks = localStorage.getItem(STORAGE_KEY_TASKS);
+      const storedCustom = localStorage.getItem('chronos_app_custom_cats_v1');
 
       this.events = storedEvents ? JSON.parse(storedEvents) : [];
       this.tasks = storedTasks ? JSON.parse(storedTasks) : [];
+      this.customCategories = storedCustom ? JSON.parse(storedCustom) : [];
     } catch (e) {
       console.error('Errore nel caricamento da localStorage:', e);
       this.events = [];
       this.tasks = [];
+      this.customCategories = [];
     }
   },
 
@@ -61,10 +65,21 @@ export const AppState = {
     try {
       localStorage.setItem(STORAGE_KEY_EVENTS, JSON.stringify(this.events));
       localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(this.tasks));
+      localStorage.setItem('chronos_app_custom_cats_v1', JSON.stringify(this.customCategories));
     } catch (e) {
       console.error('Errore nel salvataggio in localStorage:', e);
     }
     this.notify();
+  },
+
+  addCustomCategory(catName) {
+    if (!catName) return;
+    const clean = catName.trim().toLowerCase();
+    if (!clean || ['lavoro', 'personale', 'studio', 'salute', 'finanza', 'altro'].includes(clean)) return;
+    if (!this.customCategories.includes(clean)) {
+      this.customCategories.push(clean);
+      this.saveToStorage();
+    }
   },
 
   // Generazione dati demo iniziali per mostrare subito le potenzialità dell'app

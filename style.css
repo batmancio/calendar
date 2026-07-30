@@ -221,6 +221,18 @@ body {
   animation: dropdownIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.dropdown-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 190;
+  transition: opacity 0.2s ease;
+}
+
 @keyframes dropdownIn {
   from { opacity: 0; transform: translateY(-6px) scale(0.97); }
   to { opacity: 1; transform: translateY(0) scale(1); }
@@ -1613,25 +1625,31 @@ body {
     gap: 0;
   }
 
+  body.dropdown-open-lock {
+    overflow: hidden !important;
+    touch-action: none;
+  }
+
   /* --- Dropdown as Bottom Sheet on Mobile --- */
   .dropdown-menu {
     position: fixed;
-    top: 0;
+    top: auto;
     bottom: 0;
     left: 0;
     right: 0;
     width: 100%;
     max-width: 100%;
-    max-height: 90vh;
+    max-height: 85vh;
     overflow-y: auto;
     overflow-x: hidden;
+    overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    z-index: 160;
+    z-index: 200;
     animation: bottomSheetUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 -8px 30px rgba(15, 23, 42, 0.15);
-    padding-bottom: env(safe-area-inset-bottom, 8px);
-    margin-top: auto;
+    box-shadow: 0 -8px 30px rgba(15, 23, 42, 0.2);
+    padding-bottom: max(env(safe-area-inset-bottom, 16px), 16px);
   }
 
   @keyframes bottomSheetUp {
@@ -2503,45 +2521,49 @@ body {
   border-color: var(--urgency-critical-border);
 }
 
-/* Related Items Box inside Modals */
-.related-items-box {
-  margin-top: 12px;
-  padding: 10px 12px;
-  background: #f8fafc;
-  border: 1px dashed var(--bg-card-border);
-  border-radius: var(--radius-sm);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+/* Multi-day Event Bands & Sync Highlight */
+.multi-day-item {
+  position: relative;
+  transition: all 0.2s ease;
 }
-.related-title {
-  font-size: 0.78rem;
+
+.multi-day-start {
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.multi-day-middle {
+  border-radius: 0;
+}
+
+.multi-day-end {
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.multi-day-continue-left {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+.multi-day-continue-right {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.multi-day-arrow {
+  font-size: 0.65rem;
   font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
+  margin: 0 2px;
+  opacity: 0.85;
 }
-.related-items-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  max-height: 120px;
-  overflow-y: auto;
-}
-.related-item-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  border-radius: 4px;
-  background: #ffffff;
-  border: 1px solid var(--bg-card-border);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.related-item-chip:hover {
-  border-color: var(--accent-primary);
-  color: var(--accent-primary);
+
+.event-highlight-sync {
+  box-shadow: 0 0 0 2px var(--accent-primary), 0 4px 12px rgba(79, 70, 229, 0.25) !important;
+  transform: scale(1.02);
+  z-index: 10 !important;
 }

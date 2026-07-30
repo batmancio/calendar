@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Planner | Calendario & Memo</title>
   <meta name="description" content="Applicazione web per la gestione integrata di calendario eventi e memo.">
-  
+
   <!-- PWA & Mobile Web App Meta Tags for iOS / Mobile -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#f8fafc">
@@ -17,18 +19,26 @@
   <!-- Google Fonts: Inter & Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
-  
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap"
+    rel="stylesheet">
+
   <!-- CSS Styles -->
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <div class="app-container">
     <!-- Header App -->
     <header class="app-header">
       <div class="header-brand">
-        <button id="toggleSidebarMobileBtn" class="btn-icon mobile-only-inline" title="Apri Memo & Filtri">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        <button id="toggleSidebarMobileBtn" class="btn-icon mobile-only-inline" title="Gestione Account">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="5" r="1.5"></circle>
+            <circle cx="12" cy="12" r="1.5"></circle>
+            <circle cx="12" cy="19" r="1.5"></circle>
+          </svg>
         </button>
 
         <!-- Account Trigger a Sinistra di Planner -->
@@ -36,7 +46,7 @@
           <button id="openAuthModalBtn" class="btn btn-secondary-sm" title="Accedi">
             <span class="btn-text">Accedi</span>
           </button>
-          
+
           <div id="userInfoBadge" class="user-badge clickable hidden" title="Apri opzioni profilo">
             <div class="user-avatar-container">
               <img id="userAvatarImg" class="user-avatar-img hidden" alt="Foto profilo">
@@ -46,8 +56,14 @@
               <span class="user-name-text" id="currentUsernameLabel">admin</span>
               <span class="role-pill" id="userRoleBadge">Admin</span>
             </div>
-            <svg class="dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            <svg class="dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
           </div>
+
+          <!-- Overlay sfocato per chiusura tendina su mobile -->
+          <div id="accountDropdownOverlay" class="dropdown-overlay hidden"></div>
 
           <!-- Dropdown Popup Menu Profilo -->
           <div id="accountDropdownMenu" class="dropdown-menu hidden">
@@ -66,23 +82,36 @@
 
             <div class="dropdown-section">
               <button type="button" id="triggerPhotoUploadBtn" class="dropdown-item">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                  <circle cx="12" cy="13" r="4"></circle>
+                </svg>
                 <span>Cambia Foto Profilo</span>
               </button>
               <input type="file" id="profileImageInput" accept="image/*" class="hidden">
 
               <button type="button" id="enableNotificationsBtn" class="dropdown-item">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
                 <span>Abilita notifiche</span>
               </button>
 
               <button type="button" id="openFeedbackModalBtn" class="dropdown-item">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
                 <span>Segnala Bug / Suggerimento</span>
               </button>
 
               <button type="button" id="openAdminPanelBtn" class="dropdown-item hidden">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path
+                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                  </path>
+                </svg>
                 <span>Pannello Admin</span>
               </button>
             </div>
@@ -91,7 +120,11 @@
 
             <div class="dropdown-section">
               <button type="button" id="logoutBtn" class="dropdown-item danger">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
                 <span>Disconnetti</span>
               </button>
             </div>
@@ -105,15 +138,33 @@
       <div class="header-center">
         <div class="view-switchers" role="tablist">
           <button id="viewMonthBtn" class="btn-tab active" role="tab" aria-selected="true">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
             <span class="btn-text">Mese</span>
           </button>
           <button id="viewAgendaBtn" class="btn-tab" role="tab" aria-selected="false">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="8" y1="6" x2="21" y2="6"></line>
+              <line x1="8" y1="12" x2="21" y2="12"></line>
+              <line x1="8" y1="18" x2="21" y2="18"></line>
+              <line x1="3" y1="6" x2="3.01" y2="6"></line>
+              <line x1="3" y1="12" x2="3.01" y2="12"></line>
+              <line x1="3" y1="18" x2="3.01" y2="18"></line>
+            </svg>
             <span class="btn-text">Agenda</span>
           </button>
           <button id="viewMemoBtn" class="btn-tab" role="tab" aria-selected="false">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
             <span class="btn-text">Catalogo Memo</span>
           </button>
         </div>
@@ -123,11 +174,17 @@
       <div class="header-controls">
         <div class="action-buttons">
           <button id="addEventBtn" class="btn btn-secondary">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
             Evento
           </button>
           <button id="addTaskBtn" class="btn btn-primary">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
             Memo
           </button>
         </div>
@@ -162,10 +219,13 @@
         <!-- Filters & Search -->
         <div class="sidebar-section filters-section">
           <div class="search-box">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
             <input type="text" id="taskSearchInput" placeholder="Cerca tra eventi e memo...">
           </div>
-          
+
           <div class="filter-group">
             <label for="filterCategory">Categoria</label>
             <select id="filterCategory" class="custom-select">
@@ -215,11 +275,15 @@
           <div class="calendar-toolbar-row-top">
             <div class="calendar-nav">
               <button id="prevMonthBtn" class="btn-icon" title="Mese precedente">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
               </button>
               <button id="todayBtn" class="btn btn-secondary-sm">Oggi</button>
               <button id="nextMonthBtn" class="btn-icon" title="Mese successivo">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
               </button>
               <h2 id="currentMonthYearLabel" class="current-month-title">Luglio 2026</h2>
             </div>
@@ -230,12 +294,18 @@
             <div class="category-quick-filters">
               <span class="filter-label">Filtra Categoria:</span>
               <button class="cat-pill active" data-cat="all">Tutte</button>
-              <button class="cat-pill cat-lavoro" data-cat="lavoro"><span class="cat-dot cat-dot-lavoro"></span> Lavoro</button>
-              <button class="cat-pill cat-personale" data-cat="personale"><span class="cat-dot cat-dot-personale"></span> Personale</button>
-              <button class="cat-pill cat-studio" data-cat="studio"><span class="cat-dot cat-dot-studio"></span> Studio</button>
-              <button class="cat-pill cat-salute" data-cat="salute"><span class="cat-dot cat-dot-salute"></span> Salute</button>
-              <button class="cat-pill cat-finanza" data-cat="finanza"><span class="cat-dot cat-dot-finanza"></span> Finanza</button>
-              <button class="cat-pill cat-altro" data-cat="altro"><span class="cat-dot cat-dot-altro"></span> Altro</button>
+              <button class="cat-pill cat-lavoro" data-cat="lavoro"><span class="cat-dot cat-dot-lavoro"></span>
+                Lavoro</button>
+              <button class="cat-pill cat-personale" data-cat="personale"><span
+                  class="cat-dot cat-dot-personale"></span> Personale</button>
+              <button class="cat-pill cat-studio" data-cat="studio"><span class="cat-dot cat-dot-studio"></span>
+                Studio</button>
+              <button class="cat-pill cat-salute" data-cat="salute"><span class="cat-dot cat-dot-salute"></span>
+                Salute</button>
+              <button class="cat-pill cat-finanza" data-cat="finanza"><span class="cat-dot cat-dot-finanza"></span>
+                Finanza</button>
+              <button class="cat-pill cat-altro" data-cat="altro"><span class="cat-dot cat-dot-altro"></span>
+                Altro</button>
             </div>
           </div>
         </div>
@@ -292,11 +362,21 @@
   <!-- FAB Speed Dial (Mobile Only) -->
   <div id="fabSpeedDial" class="fab-speed-dial mobile-only">
     <button id="fabOptionEvent" class="fab-option" title="Nuovo Evento">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+        <line x1="16" y1="2" x2="16" y2="6"></line>
+        <line x1="8" y1="2" x2="8" y2="6"></line>
+        <line x1="3" y1="10" x2="21" y2="10"></line>
+      </svg>
       <span>Evento</span>
     </button>
     <button id="fabOptionMemo" class="fab-option" title="Nuovo Memo">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+      </svg>
       <span>Memo</span>
     </button>
   </div>
@@ -304,22 +384,45 @@
   <!-- Mobile Bottom Navigation -->
   <nav id="mobileBottomNav" class="mobile-bottom-nav mobile-only">
     <button class="bottom-nav-item active" data-view="month">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7"></rect>
+        <rect x="14" y="3" width="7" height="7"></rect>
+        <rect x="14" y="14" width="7" height="7"></rect>
+        <rect x="3" y="14" width="7" height="7"></rect>
+      </svg>
       <span>Mese</span>
     </button>
     <button class="bottom-nav-item" data-view="agenda">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="8" y1="6" x2="21" y2="6"></line>
+        <line x1="8" y1="12" x2="21" y2="12"></line>
+        <line x1="8" y1="18" x2="21" y2="18"></line>
+        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+      </svg>
       <span>Agenda</span>
     </button>
     <button id="fabMainBtn" class="bottom-nav-fab" title="Crea nuovo">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
     </button>
     <button class="bottom-nav-item" data-view="memo">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+        <line x1="16" y1="17" x2="8" y2="17"></line>
+      </svg>
       <span>Memo</span>
     </button>
     <button class="bottom-nav-item" id="bottomNavSidebarBtn">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
       <span>Filtri</span>
     </button>
   </nav>
@@ -361,12 +464,15 @@
 
           <button type="submit" id="initialLoginSubmitBtn" class="btn btn-primary btn-block btn-lg">
             <span>Accedi</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
           </button>
         </form>
 
         <div class="login-card-footer">
-          <button type="button" id="guestModeBtn" class="btn btn-secondary-sm btn-block">Continua come ospite (solo su questo dispositivo)</button>
+          <button type="button" id="guestModeBtn" class="btn btn-secondary-sm btn-block">Continua come ospite (solo su
+            questo dispositivo)</button>
           <p class="client-notice">Per richiedere le credenziali di accesso, contatta l'amministratore.</p>
         </div>
       </div>
@@ -382,7 +488,7 @@
       </div>
       <form id="eventForm" class="modal-form">
         <input type="hidden" id="eventId">
-        
+
         <div class="form-group">
           <label for="eventTitle">Titolo Evento *</label>
           <input type="text" id="eventTitle" placeholder="Es. Riunione di Progetto" required>
@@ -419,13 +525,18 @@
             <option value="salute">🔴 Salute</option>
             <option value="finanza">🟣 Finanza</option>
             <option value="altro">⚫ Altro</option>
+            <option value="custom">✨ + Categoria Personalizzata...</option>
           </select>
+          <div id="eventCustomCategoryGroup" class="form-group hidden" style="margin-top: 8px;">
+            <label for="eventCustomCategoryInput">Nome Categoria Personalizzata *</label>
+            <input type="text" id="eventCustomCategoryInput" placeholder="Es. Viaggi, Fitness, Condominio...">
+          </div>
         </div>
 
         <div class="form-group">
           <label for="eventRecurrence">Ricorrenza</label>
           <select id="eventRecurrence" class="custom-select">
-            <option value="none" selected>Nessuna (Una tantum)</option>
+            <option value="none" selected>Nessuna </option>
             <option value="daily">Giornaliera</option>
             <option value="weekly">Settimanale</option>
             <option value="monthly">Mensile</option>
@@ -436,12 +547,6 @@
         <div class="form-group">
           <label for="eventDescription">Note / Descrizione</label>
           <textarea id="eventDescription" rows="3" placeholder="Dettagli dell'evento..."></textarea>
-        </div>
-
-        <!-- Elementi Correlati Stessa Categoria -->
-        <div id="eventRelatedBox" class="related-items-box hidden">
-          <label class="related-title">🔗 Elementi Correlati della stessa categoria</label>
-          <div id="eventRelatedList" class="related-items-list"></div>
         </div>
 
         <div class="modal-footer">
@@ -488,7 +593,12 @@
               <option value="salute">🔴 Salute</option>
               <option value="finanza">🟣 Finanza</option>
               <option value="altro" selected>⚫ Altro</option>
+              <option value="custom">✨ + Categoria Personalizzata...</option>
             </select>
+            <div id="taskCustomCategoryGroup" class="form-group hidden" style="margin-top: 8px;">
+              <label for="taskCustomCategoryInput">Nome Categoria Personalizzata *</label>
+              <input type="text" id="taskCustomCategoryInput" placeholder="Es. Viaggi, Fitness, Condominio...">
+            </div>
           </div>
         </div>
 
@@ -511,12 +621,6 @@
         <div class="form-group">
           <label for="taskDescription">Descrizione</label>
           <textarea id="taskDescription" rows="3" placeholder="Dettagli del memo..."></textarea>
-        </div>
-
-        <!-- Elementi Correlati Stessa Categoria -->
-        <div id="taskRelatedBox" class="related-items-box hidden">
-          <label class="related-title">🔗 Elementi Correlati della stessa categoria</label>
-          <div id="taskRelatedList" class="related-items-list"></div>
         </div>
 
         <div class="modal-footer">
@@ -629,7 +733,8 @@
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
             <div>
               <h4 class="admin-section-title" style="margin-bottom: 0;">Segnalazioni & Bug Ricevuti</h4>
-              <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Messaggi ed avvisi inviati dagli utenti con notifiche automatiche Gmail.</p>
+              <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Messaggi ed avvisi inviati dagli
+                utenti con notifiche automatiche Gmail.</p>
             </div>
             <button id="refreshAdminFeedbacksBtn" class="btn btn-secondary-sm">Aggiorna</button>
           </div>
@@ -652,7 +757,8 @@
       <div class="modal-header">
         <div>
           <h3>Segnala Bug o Suggerimento</h3>
-          <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Invia un messaggio all'amministratore del sito.</p>
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Invia un messaggio
+            all'amministratore del sito.</p>
         </div>
         <button class="btn-icon modal-close" data-close="feedbackModal">&times;</button>
       </div>
@@ -673,7 +779,8 @@
 
         <div class="form-group">
           <label for="feedbackMessage">Messaggio Dettagliato *</label>
-          <textarea id="feedbackMessage" rows="4" placeholder="Descrivi cosa è successo o cosa vorresti migliorare..." required></textarea>
+          <textarea id="feedbackMessage" rows="4" placeholder="Descrivi cosa è successo o cosa vorresti migliorare..."
+            required></textarea>
         </div>
 
         <div id="feedbackMsgStatus" class="help-text hidden"></div>
@@ -695,4 +802,5 @@
   <!-- JavaScript -->
   <script src="js/app.js"></script>
 </body>
+
 </html>

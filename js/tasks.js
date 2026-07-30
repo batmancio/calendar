@@ -80,7 +80,7 @@ function renderSidebarTaskList() {
     };
 
     const catIcon = categoryIcons[task.category] || '📌';
-    const dateText = task.dueDate ? `📅 ${task.dueDate}` : '📌 Memo Sospeso';
+    const dateText = task.dueDate ? `📅 ${formatDateShortItalian(task.dueDate)}` : '📌 Memo Sospeso';
 
     card.innerHTML = `
       <div class="task-card-header">
@@ -126,6 +126,13 @@ function formatDateKey(dateObj) {
   return `${year}-${month}-${day}`;
 }
 
+function formatDateShortItalian(dateStr) {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
 function capitalize(str) {
   if (!str) return '';
   return str.charAt(0).toUpperCase() + str.slice(1);
@@ -134,3 +141,4 @@ function capitalize(str) {
 function escapeHtml(str) {
   return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
+

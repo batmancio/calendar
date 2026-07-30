@@ -20,7 +20,7 @@
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').catch(err => console.error('Registrazione SW fallita:', err));
+      navigator.serviceWorker.register('./sw.js').catch(err => console.error('Registrazione SW fallita:', err));
     });
   }
 
@@ -329,7 +329,7 @@
               }
               localStorage.setItem(STORAGE_KEY_ROLE, this.userRole);
               localStorage.setItem(STORAGE_KEY_DISPLAY_NAME, this.displayName);
-              
+
               this.loadFromStorage();
               this.updateAuthUI(true);
               this.pullFromRedis();
@@ -365,10 +365,10 @@
 
       this.loadFromStorage();
       this.updateAuthUI(true);
-      
+
       this.pullFromRedis();
       this.startRedisPolling();
-      
+
       const badgeRole = this.userRole === 'admin' ? 'Amministratore' : 'Cliente';
       showToast(`Benvenuto ${this.displayName} (${badgeRole})`);
     },
@@ -572,7 +572,7 @@
             this.saveToStorage(true);
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     },
 
     // Operazioni Eventi
@@ -849,7 +849,7 @@
       const addBtn = document.createElement('button');
       addBtn.className = 'cell-add-btn';
       addBtn.innerHTML = '+';
-      addBtn.title = `Nuovo evento per il ${cellDateStr}`;
+      addBtn.title = `Nuovo evento per il ${formatDateShortItalian(cellDateStr)}`;
       addBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         openEventModal({ date: cellDateStr });
@@ -886,9 +886,8 @@
         const evtEl = document.createElement('div');
         const catClass = evt.category ? `cat-${evt.category}` : 'cat-lavoro';
         evtEl.className = `cell-item event-item ${catClass}`;
-        const isMultiDay = evt.dateEnd && evt.dateEnd !== evt.date;
-        const multiDayBadge = isMultiDay ? ' 📅' : '';
-        evtEl.innerHTML = `<span style="font-size:0.68rem; opacity:0.8; margin-right:3px;">${evt.timeStart || ''}</span> ${escapeHtml(evt.title)}${multiDayBadge}`;
+        const timeFormatted = evt.timeStart ? formatTimeItalian(evt.timeStart) : '';
+        evtEl.innerHTML = `<span style="font-size:0.68rem; opacity:0.8; margin-right:3px;">${timeFormatted}</span> ${escapeHtml(evt.title)}`;
         evtEl.addEventListener('click', (e) => {
           e.stopPropagation();
           openEventModal(evt);
@@ -965,7 +964,7 @@
       const taskId = e.dataTransfer.getData('text/plain');
       if (taskId) {
         AppState.assignTaskDate(taskId, dateStr);
-        showToast(`Memo programmato per il ${dateStr}`);
+        showToast(`Memo programmato per il ${formatDateShortItalian(dateStr)}`);
       }
     });
   }
@@ -1016,12 +1015,13 @@
         if (item.type === 'event') {
           const evt = item.data;
           const catClass = evt.category ? `cat-${evt.category}` : 'cat-lavoro';
+          const timeFormatted = evt.timeStart ? (formatTimeItalian(evt.timeStart) + (evt.timeEnd ? ' - ' + formatTimeItalian(evt.timeEnd) : '')) : 'Tutto il giorno';
           itemCard.innerHTML = `
             <div>
               <strong style="color: var(--text-main); font-size: 0.88rem;">${escapeHtml(evt.title)}</strong>
-              <div style="font-size: 0.75rem; color: var(--text-muted);">${evt.timeStart ? evt.timeStart + ' - ' + evt.timeEnd : 'Tutto il giorno'}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">${timeFormatted}</div>
             </div>
-            <span class="cat-badge ${catClass}">📅 ${capitalize(evt.category || 'evento')}</span>
+            <span class="cat-badge ${catClass}">${capitalize(evt.category || 'evento')}</span>
           `;
           itemCard.addEventListener('click', () => openEventModal(evt));
         } else {
@@ -1176,60 +1176,6 @@
     });
   }
 
-  function renderRelatedItems(category, currentId, type = 'event') {
-    const eventBox = document.getElementById('eventRelatedBox');
-    const eventList = document.getElementById('eventRelatedList');
-    const taskBox = document.getElementById('taskRelatedBox');
-    const taskList = document.getElementById('taskRelatedList');
-
-    const targetBox = type === 'event' ? eventBox : taskBox;
-    const targetList = type === 'event' ? eventList : taskList;
-
-    if (!targetBox || !targetList) return;
-    targetList.innerHTML = '';
-
-    if (!category) {
-      targetBox.classList.add('hidden');
-      return;
-    }
-
-    const relatedEvents = AppState.events.filter(e => e.category === category && e.id !== currentId);
-    const relatedTasks = AppState.tasks.filter(t => t.category === category && t.id !== currentId);
-
-    const totalRelated = relatedEvents.length + relatedTasks.length;
-
-    if (totalRelated === 0) {
-      targetBox.classList.add('hidden');
-      return;
-    }
-
-    targetBox.classList.remove('hidden');
-
-    relatedEvents.forEach(evt => {
-      const chip = document.createElement('span');
-      chip.className = `related-item-chip cat-${evt.category}`;
-      chip.innerHTML = `📅 Evento: ${escapeHtml(evt.title)}`;
-      chip.addEventListener('click', () => {
-        if (type === 'event') closeModal('eventModal');
-        else closeModal('taskModal');
-        openEventModal(evt);
-      });
-      targetList.appendChild(chip);
-    });
-
-    relatedTasks.forEach(task => {
-      const chip = document.createElement('span');
-      chip.className = `related-item-chip cat-${task.category}`;
-      chip.innerHTML = `📌 Memo: ${escapeHtml(task.title)}`;
-      chip.addEventListener('click', () => {
-        if (type === 'event') closeModal('eventModal');
-        else closeModal('taskModal');
-        openTaskModal(task);
-      });
-      targetList.appendChild(chip);
-    });
-  }
-
   function formatDateItalian(dateStr) {
     const parts = dateStr.split('-');
     if (parts.length !== 3) return dateStr;
@@ -1244,7 +1190,16 @@
   }
 
   function formatTimeItalian(timeStr) {
-    if (!timeStr || timeStr.length !== 5) return timeStr;
+    if (!timeStr) return '';
+    const ampmMatch = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)?$/i);
+    if (ampmMatch) {
+      let hours = parseInt(ampmMatch[1], 10);
+      const minutes = ampmMatch[2];
+      const ampm = ampmMatch[3] ? ampmMatch[3].toUpperCase() : null;
+      if (ampm === 'PM' && hours < 12) hours += 12;
+      if (ampm === 'AM' && hours === 12) hours = 0;
+      return `${String(hours).padStart(2, '0')}:${minutes}`;
+    }
     return timeStr;
   }
 
@@ -1374,8 +1329,8 @@
 
           data.users.forEach(u => {
             const tr = document.createElement('tr');
-            const roleBadgeHtml = u.role === 'admin' 
-              ? `<span class="role-pill admin">Admin</span>` 
+            const roleBadgeHtml = u.role === 'admin'
+              ? `<span class="role-pill admin">Admin</span>`
               : `<span class="role-pill client">Cliente</span>`;
 
             tr.innerHTML = `
@@ -1503,7 +1458,7 @@
 
             const typeClass = fb.type || 'bug';
             const typeLabel = fb.type === 'bug' ? '🐛 Bug' : (fb.type === 'feature' ? '💡 Miglioria' : '💬 Generale');
-            const dateStr = fb.createdAt ? new Date(fb.createdAt).toLocaleString('it-IT') : '';
+            const dateStr = fb.createdAt ? new Date(fb.createdAt).toLocaleString('it-IT', { hour12: false }) : '';
 
             card.innerHTML = `
               <div class="feedback-card-header">
@@ -1608,6 +1563,52 @@
     if (modal) modal.classList.add('hidden');
   }
 
+  function syncCustomCategoriesToSelects() {
+    if (!AppState.customCategories || AppState.customCategories.length === 0) return;
+
+    const filterSelect = document.getElementById('filterCategory');
+    const eventSelect = document.getElementById('eventCategory');
+    const taskSelect = document.getElementById('taskCategory');
+
+    [filterSelect, eventSelect, taskSelect].forEach(select => {
+      if (!select) return;
+      AppState.customCategories.forEach(cat => {
+        const exists = Array.from(select.options).some(opt => opt.value === cat);
+        if (!exists) {
+          const option = document.createElement('option');
+          option.value = cat;
+          option.textContent = `✨ ${capitalize(cat)}`;
+          const customOpt = select.querySelector('option[value="custom"]');
+          if (customOpt) {
+            select.insertBefore(option, customOpt);
+          } else {
+            select.appendChild(option);
+          }
+        }
+      });
+    });
+
+    const quickFilters = document.querySelector('.category-quick-filters');
+    if (quickFilters) {
+      AppState.customCategories.forEach(cat => {
+        const exists = quickFilters.querySelector(`.cat-pill[data-cat="${cat}"]`);
+        if (!exists) {
+          const btn = document.createElement('button');
+          btn.className = `cat-pill cat-custom`;
+          btn.dataset.cat = cat;
+          btn.innerHTML = `<span class="cat-dot" style="background:var(--accent-primary);"></span> ${capitalize(cat)}`;
+          btn.addEventListener('click', () => {
+            quickFilters.querySelectorAll('.cat-pill').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            AppState.filterCategory = cat;
+            renderCalendar();
+          });
+          quickFilters.appendChild(btn);
+        }
+      });
+    }
+  }
+
   function openEventModal(initialData = {}) {
     const modalTitle = document.getElementById('eventModalTitle');
     const eventIdInput = document.getElementById('eventId');
@@ -1620,6 +1621,9 @@
     const recurrenceInput = document.getElementById('eventRecurrence');
     const descInput = document.getElementById('eventDescription');
     const deleteBtn = document.getElementById('deleteEventBtn');
+    const eventCustomGroup = document.getElementById('eventCustomCategoryGroup');
+
+    syncCustomCategoriesToSelects();
 
     if (initialData.id) {
       modalTitle.textContent = 'Modifica Evento';
@@ -1648,12 +1652,7 @@
       deleteBtn.classList.add('hidden');
     }
 
-    const selectedCat = initialData.category || (initialData.id ? 'lavoro' : 'lavoro');
-    renderRelatedItems(selectedCat, initialData.id, 'event');
-
-    categoryInput.onchange = () => {
-      renderRelatedItems(categoryInput.value, initialData.id, 'event');
-    };
+    if (eventCustomGroup) eventCustomGroup.classList.add('hidden');
 
     openModal('eventModal');
   }
@@ -1665,13 +1664,25 @@
     const dateEnd = document.getElementById('eventDateEnd').value || dateStart;
     const recurrence = document.getElementById('eventRecurrence').value || 'none';
 
+    let selectedCat = document.getElementById('eventCategory').value;
+    if (selectedCat === 'custom') {
+      const customVal = document.getElementById('eventCustomCategoryInput').value.trim();
+      if (customVal) {
+        AppState.addCustomCategory(customVal);
+        selectedCat = customVal.toLowerCase();
+        syncCustomCategoriesToSelects();
+      } else {
+        selectedCat = 'lavoro';
+      }
+    }
+
     const eventData = {
       title: document.getElementById('eventTitle').value.trim(),
       date: dateStart,
       dateEnd: dateEnd,
       timeStart: document.getElementById('eventTimeStart').value,
       timeEnd: document.getElementById('eventTimeEnd').value,
-      category: document.getElementById('eventCategory').value,
+      category: selectedCat,
       description: document.getElementById('eventDescription').value.trim(),
       recurrence: recurrence
     };
@@ -1739,6 +1750,9 @@
     const statusInput = document.getElementById('taskStatus');
     const descInput = document.getElementById('taskDescription');
     const deleteBtn = document.getElementById('deleteTaskBtn');
+    const taskCustomGroup = document.getElementById('taskCustomCategoryGroup');
+
+    syncCustomCategoriesToSelects();
 
     if (initialData.id) {
       modalTitle.textContent = 'Modifica Memo';
@@ -1762,12 +1776,7 @@
       deleteBtn.classList.add('hidden');
     }
 
-    const selectedCat = initialData.category || (initialData.id ? 'altro' : 'altro');
-    renderRelatedItems(selectedCat, initialData.id, 'task');
-
-    categoryInput.onchange = () => {
-      renderRelatedItems(categoryInput.value, initialData.id, 'task');
-    };
+    if (taskCustomGroup) taskCustomGroup.classList.add('hidden');
 
     openModal('taskModal');
   }
@@ -1775,10 +1784,23 @@
   function handleTaskSubmit(e) {
     e.preventDefault();
     const taskId = document.getElementById('taskId').value;
+
+    let selectedCat = document.getElementById('taskCategory').value;
+    if (selectedCat === 'custom') {
+      const customVal = document.getElementById('taskCustomCategoryInput').value.trim();
+      if (customVal) {
+        AppState.addCustomCategory(customVal);
+        selectedCat = customVal.toLowerCase();
+        syncCustomCategoriesToSelects();
+      } else {
+        selectedCat = 'altro';
+      }
+    }
+
     const taskData = {
       title: document.getElementById('taskTitle').value.trim(),
       urgency: document.getElementById('taskUrgency').value,
-      category: document.getElementById('taskCategory').value,
+      category: selectedCat,
       dueDate: document.getElementById('taskDueDate').value || null,
       status: document.getElementById('taskStatus').value,
       description: document.getElementById('taskDescription').value.trim()
@@ -1939,6 +1961,7 @@
   // ==========================================
   document.addEventListener('DOMContentLoaded', () => {
     AppState.init();
+    syncCustomCategoriesToSelects();
     initModals();
 
     AppState.subscribe(() => {
@@ -1951,10 +1974,39 @@
       openAuthModalBtn.addEventListener('click', () => openModal('authModal'));
     }
 
+    const accountDropdownOverlay = document.getElementById('accountDropdownOverlay');
+
+    function closeAccountDropdown() {
+      if (accountDropdownMenu) accountDropdownMenu.classList.add('hidden');
+      if (userInfoBadge) userInfoBadge.classList.remove('active');
+      if (accountDropdownOverlay) accountDropdownOverlay.classList.add('hidden');
+      document.body.classList.remove('dropdown-open-lock');
+    }
+
+    function openAccountDropdown() {
+      if (accountDropdownMenu) accountDropdownMenu.classList.remove('hidden');
+      if (userInfoBadge) userInfoBadge.classList.add('active');
+      if (accountDropdownOverlay) accountDropdownOverlay.classList.remove('hidden');
+      document.body.classList.add('dropdown-open-lock');
+    }
+
+    function toggleAccountDropdown() {
+      if (accountDropdownMenu && accountDropdownMenu.classList.contains('hidden')) {
+        openAccountDropdown();
+      } else {
+        closeAccountDropdown();
+      }
+    }
+
+    if (accountDropdownOverlay) {
+      accountDropdownOverlay.addEventListener('click', closeAccountDropdown);
+      accountDropdownOverlay.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+    }
+
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', () => {
-        if (accountDropdownMenu) accountDropdownMenu.classList.add('hidden');
+        closeAccountDropdown();
         AppState.logout();
       });
     }
@@ -1962,7 +2014,7 @@
     const openAdminPanelBtn = document.getElementById('openAdminPanelBtn');
     if (openAdminPanelBtn) {
       openAdminPanelBtn.addEventListener('click', () => {
-        if (accountDropdownMenu) accountDropdownMenu.classList.add('hidden');
+        closeAccountDropdown();
         openModal('adminModal');
         fetchAdminUsers();
         fetchAdminFeedbacks();
@@ -1990,32 +2042,32 @@
     const refreshAdminFeedbacksBtn = document.getElementById('refreshAdminFeedbacksBtn');
     const toggleSidebarMobileBtn = document.getElementById('toggleSidebarMobileBtn');
 
-    if (userInfoBadge && accountDropdownMenu) {
+    if (userInfoBadge) {
       userInfoBadge.addEventListener('click', (e) => {
         e.stopPropagation();
-        accountDropdownMenu.classList.toggle('hidden');
-        userInfoBadge.classList.toggle('active');
+        toggleAccountDropdown();
       });
-
-      document.addEventListener('click', (e) => {
-        if (!accountDropdownMenu.contains(e.target) && !userInfoBadge.contains(e.target)) {
-          accountDropdownMenu.classList.add('hidden');
-          userInfoBadge.classList.remove('active');
-        }
-      });
-
-      // Mobile: hamburger menu opens account dropdown
-      if (toggleSidebarMobileBtn) {
-        toggleSidebarMobileBtn.addEventListener('click', () => {
-          accountDropdownMenu.classList.toggle('hidden');
-          userInfoBadge.classList.toggle('active');
-        });
-      }
     }
+
+    // Mobile: 3-dots button opens account dropdown
+    if (toggleSidebarMobileBtn) {
+      toggleSidebarMobileBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleAccountDropdown();
+      });
+    }
+
+    document.addEventListener('click', (e) => {
+      if (accountDropdownMenu && !accountDropdownMenu.contains(e.target) &&
+        userInfoBadge && !userInfoBadge.contains(e.target) &&
+        toggleSidebarMobileBtn && !toggleSidebarMobileBtn.contains(e.target)) {
+        closeAccountDropdown();
+      }
+    });
 
     if (triggerPhotoUploadBtn && profileImageInput) {
       triggerPhotoUploadBtn.addEventListener('click', () => {
-        if (accountDropdownMenu) accountDropdownMenu.classList.add('hidden');
+        closeAccountDropdown();
         profileImageInput.click();
       });
 
@@ -2068,7 +2120,7 @@
                   'Authorization': `Bearer ${AppState.token}`
                 },
                 body: JSON.stringify({ avatarDataUrl: dataUrl })
-              }).catch(() => {});
+              }).catch(() => { });
             }
 
             showToast('Foto profilo aggiornata!');
@@ -2081,7 +2133,7 @@
 
     if (openFeedbackModalBtn && feedbackModal) {
       openFeedbackModalBtn.addEventListener('click', () => {
-        if (accountDropdownMenu) accountDropdownMenu.classList.add('hidden');
+        closeAccountDropdown();
         openModal('feedbackModal');
       });
     }
@@ -2338,11 +2390,20 @@
 
     if (installBannerBtn) {
       installBannerBtn.addEventListener('click', async () => {
-        if (!deferredInstallPrompt) return;
-        deferredInstallPrompt.prompt();
-        await deferredInstallPrompt.userChoice;
-        deferredInstallPrompt = null;
-        if (installBanner) installBanner.classList.add('hidden');
+        if (deferredInstallPrompt) {
+          deferredInstallPrompt.prompt();
+          await deferredInstallPrompt.userChoice;
+          deferredInstallPrompt = null;
+          if (installBanner) installBanner.classList.add('hidden');
+        } else {
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+          if (isIOS) {
+            alert('Per installare Planner su iPhone/iPad:\n\n1. Tocca l\'icona Condividi (in basso al centro su Safari)\n2. Scorri in basso e seleziona "Aggiungi alla schermata Home"');
+          } else {
+            alert('Per installare l\'app:\n\nApri il menu opzioni del browser (i 3 punti in alto a destra) e seleziona "Installa app" o "Aggiungi a schermata Home".');
+          }
+          if (installBanner) installBanner.classList.add('hidden');
+        }
       });
     }
 

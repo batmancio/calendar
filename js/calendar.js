@@ -111,7 +111,7 @@ function renderMonthGrid(container, year, month) {
     const addBtn = document.createElement('button');
     addBtn.className = 'cell-add-btn';
     addBtn.innerHTML = '+';
-    addBtn.title = `Aggiungi evento per il ${cellDateStr}`;
+    addBtn.title = `Aggiungi evento per il ${formatDateShortItalian(cellDateStr)}`;
     addBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       openEventModal({ date: cellDateStr });
@@ -125,20 +125,36 @@ function renderMonthGrid(container, year, month) {
     const eventsContainer = document.createElement('div');
     eventsContainer.className = 'cell-events-container';
 
-    // 1. Filtra Eventi per questa data
+    // 1. Filtra Eventi per questa data (inclusi eventi multi-giorno)
     const dayEvents = AppState.events.filter(e => {
+      const eventStart = e.date;
+      const eventEnd = e.dateEnd || e.date;
+      if (cellDateStr < eventStart || cellDateStr > eventEnd) return false;
+
       if (AppState.filterCategory !== 'all' && e.category !== AppState.filterCategory) return false;
       if (AppState.searchQuery.trim()) {
         const q = AppState.searchQuery.toLowerCase();
         return e.title.toLowerCase().includes(q) || (e.description && e.description.toLowerCase().includes(q));
       }
-      return e.date === cellDateStr;
+      return true;
     });
 
     dayEvents.forEach(evt => {
       const evtEl = document.createElement('div');
-      evtEl.className = `cell-item event-item cat-${evt.category}`;
-      evtEl.innerHTML = `<span class="time">${evt.timeStart || ''}</span> ${escapeHtml(evt.title)}`;
+      const info = getMultiDayInfo(evt, cellDateStr, i);
+      const catClass = evt.category ? `cat-${evt.category}` : 'cat-lavoro';
+      evtEl.className = `cell-item event-item ${catClass} ${info.classes}`;
+      evtEl.dataset.eventId = evt.id;
+
+      const timeStr = evt.timeStart ? formatTime24h(evt.timeStart) : '';
+      const timeDisplay = timeStr ? `<span class="time">${timeStr}</span> ` : '';
+
+      evtEl.innerHTML = `${info.prefix}${info.dayBadge}${timeDisplay}${escapeHtml(evt.title)}${info.suffix}`;
+
+      // Hover / Touch sync highlight per tutti i giorni dello stesso evento
+      evtEl.addEventListener('mouseenter', () => highlightEventSync(evt.id, true));
+      evtEl.addEventListener('mouseleave', () => highlightEventSync(evt.id, false));
+
       evtEl.addEventListener('click', (e) => {
         e.stopPropagation();
         openEventDetailModal(evt);
@@ -197,7 +213,7 @@ function setupCellDragAndDrop(cell, dateStr) {
     const taskId = e.dataTransfer.getData('text/plain');
     if (taskId) {
       AppState.assignTaskDate(taskId, dateStr);
-      showToast(`Task programmata per il ${dateStr}`, 'success');
+      showToast(`Task programmata per il ${formatDateShortItalian(dateStr)}`, 'success');
     }
   });
 }
@@ -246,10 +262,11 @@ function renderAgendaList(container) {
 
       if (item.type === 'event') {
         const evt = item.data;
+        const timeFormatted = evt.timeStart ? (formatTime24h(evt.timeStart) + (evt.timeEnd ? ' - ' + formatTime24h(evt.timeEnd) : '')) : 'Tutto il giorno';
         itemCard.innerHTML = `
           <div>
             <strong style="color: var(--text-main);">${escapeHtml(evt.title)}</strong>
-            <div style="font-size: 0.78rem; color: var(--text-muted);">${evt.timeStart ? evt.timeStart + ' - ' + evt.timeEnd : 'Tutto il giorno'} | Categoria: ${evt.category}</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted);">${timeFormatted} | Categoria: ${evt.category}</div>
           </div>
           <span class="urgency-badge" style="background: rgba(99,102,241,0.2); color: var(--accent-primary);">Evento</span>
         `;
@@ -282,18 +299,82 @@ function formatDateItalian(dateStr) {
   return d.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+function formatDateShortItalian(dateStr) {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
+function formatTime24h(timeStr) {
+  if (!timeStr) return '';
+  const ampmMatch = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)?$/i);
+  if (ampmMatch) {
+    let hours = parseInt(ampmMatch[1], 10);
+    const minutes = ampmMatch[2];
+    const ampm = ampmMatch[3] ? ampmMatch[3].toUpperCase() : null;
+    if (ampm === 'PM' && hours < 12) hours += 12;
+    if (ampm === 'AM' && hours === 12) hours = 0;
+    return `${String(hours).padStart(2, '0')}:${minutes}`;
+  }
+  return timeStr;
+}
+
 function escapeHtml(str) {
   return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-function showToast(msg, type = 'success') {
-  const container = document.getElementById('toastContainer');
-  if (!container) return;
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  toast.textContent = msg;
-  container.appendChild(toast);
-  setTimeout(() => {
-    toast.remove();
-  }, 3000);
+function getMultiDayInfo(evt, cellDateStr, cellIndex) {
+  const startDateStr = evt.date;
+  const endDateStr = evt.dateEnd || evt.date;
+  const isMultiDay = endDateStr !== startDateStr;
+  if (!isMultiDay) {
+    return { isMultiDay: false, classes: '', prefix: '', suffix: '', dayBadge: '' };
+  }
+
+  const startDate = new Date(startDateStr);
+  const endDate = new Date(endDateStr);
+  const cellDate = new Date(cellDateStr);
+
+  const totalTime = endDate.getTime() - startDate.getTime();
+  const totalDays = Math.round(totalTime / (1000 * 3600 * 24)) + 1;
+
+  const currentTime = cellDate.getTime() - startDate.getTime();
+  const currentDayIndex = Math.round(currentTime / (1000 * 3600 * 24)) + 1;
+
+  const isFirstDay = cellDateStr === startDateStr;
+  const isLastDay = cellDateStr === endDateStr;
+
+  const isRowStart = cellIndex % 7 === 0;
+  const isRowEnd = cellIndex % 7 === 6;
+
+  let classes = 'multi-day-item';
+  if (isFirstDay) classes += ' multi-day-start';
+  else if (isLastDay) classes += ' multi-day-end';
+  else classes += ' multi-day-middle';
+
+  let prefix = '';
+  let suffix = '';
+
+  if (!isFirstDay && isRowStart) {
+    classes += ' multi-day-continue-left';
+    prefix = '<span class="multi-day-arrow">◀</span>';
+  }
+  if (!isLastDay && isRowEnd) {
+    classes += ' multi-day-continue-right';
+    suffix = '<span class="multi-day-arrow">▶</span>';
+  }
+
+  const dayBadge = `<small style="font-size:0.65rem; opacity:0.85; margin-right:3px; font-weight:600;">${currentDayIndex}/${totalDays}</small>`;
+
+  return { isMultiDay: true, classes, prefix, suffix, dayBadge };
+}
+
+function highlightEventSync(eventId, enable) {
+  if (!eventId) return;
+  const elements = document.querySelectorAll(`[data-event-id="${eventId}"]`);
+  elements.forEach(el => {
+    if (enable) el.classList.add('event-highlight-sync');
+    else el.classList.remove('event-highlight-sync');
+  });
 }
