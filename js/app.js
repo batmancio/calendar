@@ -1735,18 +1735,24 @@
         return;
       }
 
+      const submitBtn = document.getElementById('initialLoginSubmitBtn');
+      if (submitBtn) submitBtn.disabled = true;
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
       fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: cleanUser, password })
+        body: JSON.stringify({ username: cleanUser, password }),
+        signal: controller.signal
       })
         .then(res => res.json())
         .then(data => {
+          clearTimeout(timeoutId);
+          if (submitBtn) submitBtn.disabled = false;
           if (data && data.success) {
             AppState.setSession(data.username, data.token, data.role, data.displayName);
-            if (onSuccessCallback) onSuccessCallback();
-          } else if (cleanUser === 'admin' && password === 'admin123') {
-            AppState.setSession('admin', 'token_admin_local', 'admin', 'Amministratore');
             if (onSuccessCallback) onSuccessCallback();
           } else {
             if (errorMsgEl) {
@@ -1756,7 +1762,8 @@
           }
         })
         .catch(() => {
-          // Fallback per test immediato e resilienza sia online che offline
+          clearTimeout(timeoutId);
+          if (submitBtn) submitBtn.disabled = false;
           if (cleanUser === 'admin' && password === 'admin123') {
             AppState.setSession('admin', 'token_admin_local', 'admin', 'Amministratore');
             if (onSuccessCallback) onSuccessCallback();
