@@ -1004,116 +1004,119 @@
       addBtn.className = 'cell-add-btn';
       addBtn.innerHTML = '+';
       addBtn.title = `Nuovo evento per il ${formatDateShortItalian(cellDateStr)}`;
-      addBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        cellHeader.appendChild(dayNumSpan);
-        cellHeader.appendChild(addBtn);
-        cell.appendChild(cellHeader);
 
-        // Contenitore Eventi & Task per Desktop
-        const eventsContainer = document.createElement('div');
-        eventsContainer.className = 'cell-events-container';
+      cellHeader.appendChild(dayNumSpan);
+      cellHeader.appendChild(addBtn);
+      cell.appendChild(cellHeader);
 
-        // Contenitore Pallini Colorati per Mobile (Apple Calendar Style)
-        const dotsContainer = document.createElement('div');
-        dotsContainer.className = 'cell-dots-container';
+      // Contenitore Eventi & Task per Desktop
+      const eventsContainer = document.createElement('div');
+      eventsContainer.className = 'cell-events-container';
 
-        const dayEvents = AppState.events.filter(e => {
-          const eventStart = e.date;
-          const eventEnd = e.dateEnd || e.date;
+      // Contenitore Pallini Colorati per Mobile (Apple Calendar Style)
+      const dotsContainer = document.createElement('div');
+      dotsContainer.className = 'cell-dots-container';
 
-          // Check if event spans across this day (multi-day or single-day)
-          if (cellDateStr < eventStart || cellDateStr > eventEnd) return false;
+      const dayEvents = AppState.events.filter(e => {
+        const eventStart = e.date;
+        const eventEnd = e.dateEnd || e.date;
 
-          if (AppState.filterCategory !== 'all' && e.category !== AppState.filterCategory) return false;
-          if (AppState.searchQuery.trim()) {
-            const q = AppState.searchQuery.toLowerCase();
-            const matchTitle = e.title.toLowerCase().includes(q);
-            const matchDesc = e.description && e.description.toLowerCase().includes(q);
-            if (!matchTitle && !matchDesc) return false;
-          }
-          return true;
-        });
+        // Check if event spans across this day (multi-day or single-day)
+        if (cellDateStr < eventStart || cellDateStr > eventEnd) return false;
 
-        dayEvents.forEach(evt => {
-          // Desktop Item Rendering
-          const evtEl = document.createElement('div');
-          const info = getMultiDayInfo(evt, cellDateStr, i);
-          const catClass = evt.category ? `cat-${evt.category}` : 'cat-lavoro';
-          evtEl.className = `cell-item event-item ${catClass} ${info.classes}`;
-          evtEl.dataset.eventId = evt.id;
+        if (AppState.filterCategory !== 'all' && e.category !== AppState.filterCategory) return false;
+        if (AppState.searchQuery.trim()) {
+          const q = AppState.searchQuery.toLowerCase();
+          const matchTitle = e.title.toLowerCase().includes(q);
+          const matchDesc = e.description && e.description.toLowerCase().includes(q);
+          if (!matchTitle && !matchDesc) return false;
+        }
+        return true;
+      });
 
-          if (info.isMultiDay) {
-            if (info.isFirstDay) {
-              evtEl.innerHTML = `<span class="multiday-label-start"><strong>Inizio: </strong>${escapeHtml(evt.title)}</span>`;
-            } else if (info.isLastDay) {
-              evtEl.innerHTML = `<span class="multiday-label-end"><strong>Fine: </strong>${escapeHtml(evt.title)}</span>`;
-            } else {
-              evtEl.innerHTML = `<span class="multiday-label-cont">${escapeHtml(evt.title)}</span>`;
-            }
+      dayEvents.forEach(evt => {
+        // Desktop Item Rendering
+        const evtEl = document.createElement('div');
+        const info = getMultiDayInfo(evt, cellDateStr, i);
+        const catClass = evt.category ? `cat-${evt.category}` : 'cat-lavoro';
+        evtEl.className = `cell-item event-item ${catClass} ${info.classes}`;
+        evtEl.dataset.eventId = evt.id;
+
+        if (info.isMultiDay) {
+          if (info.isFirstDay) {
+            evtEl.innerHTML = `<span class="multiday-label-start"><strong>Inizio: </strong>${escapeHtml(evt.title)}</span>`;
+          } else if (info.isLastDay) {
+            evtEl.innerHTML = `<span class="multiday-label-end"><strong>Fine: </strong>${escapeHtml(evt.title)}</span>`;
           } else {
-            const timeFormatted = evt.timeStart ? formatTimeItalian(evt.timeStart) : '';
-            const timeDisplay = timeFormatted ? `<span style="font-size:0.68rem; opacity:0.8; margin-right:3px;">${timeFormatted}</span>` : '';
-            evtEl.innerHTML = `${timeDisplay}${escapeHtml(evt.title)}`;
+            evtEl.innerHTML = `<span class="multiday-label-cont">${escapeHtml(evt.title)}</span>`;
           }
-
-          evtEl.addEventListener('mouseenter', () => highlightEventSync(evt.id, true));
-          evtEl.addEventListener('mouseleave', () => highlightEventSync(evt.id, false));
-
-          evtEl.addEventListener('click', (e) => {
-            e.stopPropagation();
-            openEventModal(evt);
-          });
-          eventsContainer.appendChild(evtEl);
-
-          // Mobile Dot Rendering (Apple Calendar Style)
-          const dot = document.createElement('span');
-          dot.className = `cell-dot ${catClass}`;
-          dot.title = evt.title;
-          dotsContainer.appendChild(dot);
-        });
-
-        const dayTasks = AppState.tasks.filter(t => {
-          if (t.dueDate !== cellDateStr) return false;
-          if (AppState.filterUrgency !== 'all' && t.urgency !== AppState.filterUrgency) return false;
-          if (AppState.filterCategory !== 'all' && t.category !== AppState.filterCategory) return false;
-          if (AppState.searchQuery.trim()) {
-            const q = AppState.searchQuery.toLowerCase();
-            return t.title.toLowerCase().includes(q) || (t.description && t.description.toLowerCase().includes(q));
-          }
-          return true;
-        });
-
-        dayTasks.forEach(task => {
-          const taskEl = document.createElement('div');
-          taskEl.className = `cell-item task-item ${task.urgency} ${task.status === 'completed' ? 'completed' : ''}`;
-          const statusIcon = task.status === 'completed' ? '✓' : '📌';
-          taskEl.innerHTML = `<span class="status">${statusIcon}</span> ${escapeHtml(task.title)}`;
-          taskEl.addEventListener('click', (e) => {
-            e.stopPropagation();
-            openTaskModal(task);
-          });
-          eventsContainer.appendChild(taskEl);
-        });
-
-        const maxVisible = 2;
-        const allItems = eventsContainer.querySelectorAll('.cell-item');
-        if (allItems.length > maxVisible) {
-          for (let idx = maxVisible; idx < allItems.length; idx++) {
-            allItems[idx].style.display = 'none';
-          }
-          const overflowEl = document.createElement('div');
-          overflowEl.className = 'cell-events-overflow';
-          overflowEl.textContent = `+${allItems.length - maxVisible}`;
-          overflowEl.addEventListener('click', (e) => {
-            e.stopPropagation();
-            allItems.forEach(item => item.style.display = '');
-            overflowEl.remove();
-          });
-          eventsContainer.appendChild(overflowEl);
+        } else {
+          const timeFormatted = evt.timeStart ? formatTimeItalian(evt.timeStart) : '';
+          const timeDisplay = timeFormatted ? `<span style="font-size:0.68rem; opacity:0.8; margin-right:3px;">${timeFormatted}</span>` : '';
+          evtEl.innerHTML = `${timeDisplay}${escapeHtml(evt.title)}`;
         }
 
-        cell.appendChild(eventsContainer);
+        evtEl.addEventListener('mouseenter', () => highlightEventSync(evt.id, true));
+        evtEl.addEventListener('mouseleave', () => highlightEventSync(evt.id, false));
+
+        evtEl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openEventModal(evt);
+        });
+        eventsContainer.appendChild(evtEl);
+
+        // Mobile Dot Rendering (Apple Calendar Style)
+        const dot = document.createElement('span');
+        dot.className = `cell-dot ${catClass}`;
+        dot.title = evt.title;
+        dotsContainer.appendChild(dot);
+      });
+
+      const dayTasks = AppState.tasks.filter(t => {
+        if (t.dueDate !== cellDateStr) return false;
+        if (AppState.filterUrgency !== 'all' && t.urgency !== AppState.filterUrgency) return false;
+        if (AppState.filterCategory !== 'all' && t.category !== AppState.filterCategory) return false;
+        if (AppState.searchQuery.trim()) {
+          const q = AppState.searchQuery.toLowerCase();
+          return t.title.toLowerCase().includes(q) || (t.description && t.description.toLowerCase().includes(q));
+        }
+        return true;
+      });
+
+      dayTasks.forEach(task => {
+        const taskEl = document.createElement('div');
+        taskEl.className = `cell-item task-item ${task.urgency} ${task.status === 'completed' ? 'completed' : ''}`;
+        const statusIcon = task.status === 'completed' ? '✓' : '📌';
+        taskEl.innerHTML = `<span class="status">${statusIcon}</span> ${escapeHtml(task.title)}`;
+        taskEl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openTaskModal(task);
+        });
+        eventsContainer.appendChild(taskEl);
+      });
+
+      const maxVisible = 2;
+      const allItems = eventsContainer.querySelectorAll('.cell-item');
+      if (allItems.length > maxVisible) {
+        for (let idx = maxVisible; idx < allItems.length; idx++) {
+          allItems[idx].style.display = 'none';
+        }
+        const overflowEl = document.createElement('div');
+        overflowEl.className = 'cell-events-overflow';
+        overflowEl.textContent = `+${allItems.length - maxVisible}`;
+        overflowEl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          allItems.forEach(item => item.style.display = '');
+          overflowEl.remove();
+        });
+        eventsContainer.appendChild(overflowEl);
+      }
+
+      cell.appendChild(eventsContainer);
+
+      addBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openEventModal({ date: cellDateStr });
       });
 
       setupCellDragAndDrop(cell, cellDateStr);
