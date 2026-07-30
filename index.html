@@ -95,32 +95,27 @@
         <h1 class="brand-title">Planner</h1>
       </div>
 
-      <!-- Controls & Quick Actions -->
-      <div class="header-controls">
+      <!-- Centro Header: 3 Viste Principali -->
+      <div class="header-center">
         <div class="view-switchers" role="tablist">
           <button id="viewMonthBtn" class="btn-tab active" role="tab" aria-selected="true">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
             <span class="btn-text">Mese</span>
           </button>
           <button id="viewAgendaBtn" class="btn-tab" role="tab" aria-selected="false">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
             <span class="btn-text">Agenda</span>
           </button>
           <button id="viewMemoBtn" class="btn-tab" role="tab" aria-selected="false">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
             <span class="btn-text">Catalogo Memo</span>
           </button>
         </div>
+      </div>
 
+      <!-- Destra Header: Quick Actions -->
+      <div class="header-controls">
         <div class="action-buttons">
-          <button id="exportDataBtn" class="btn btn-secondary-sm" title="Esporta Backup JSON">
-            <span class="btn-text">Esporta</span>
-          </button>
-          <button id="importDataBtn" class="btn btn-secondary-sm" title="Importa Backup JSON">
-            <span class="btn-text">Importa</span>
-          </button>
-          <input type="file" id="importFileInput" accept=".json" class="hidden">
-
           <button id="addEventBtn" class="btn btn-secondary">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             Evento
@@ -140,29 +135,6 @@
         <div class="sidebar-header-mobile mobile-only">
           <h3>Memo & Filtri</h3>
           <button id="closeSidebarMobileBtn" class="btn-icon">&times;</button>
-        </div>
-
-        <!-- Dashboard Urgencies -->
-        <div class="sidebar-section urgency-stats-widget">
-          <h2 class="section-title">Urgenze</h2>
-          <div class="urgency-grid">
-            <div class="urgency-card critical" data-urgency="critical" title="Filtra per urgenza Critica">
-              <span class="card-count" id="countCritical">0</span>
-              <span class="card-label">Critica</span>
-            </div>
-            <div class="urgency-card high" data-urgency="high" title="Filtra per urgenza Alta">
-              <span class="card-count" id="countHigh">0</span>
-              <span class="card-label">Alta</span>
-            </div>
-            <div class="urgency-card medium" data-urgency="medium" title="Filtra per urgenza Media">
-              <span class="card-count" id="countMedium">0</span>
-              <span class="card-label">Media</span>
-            </div>
-            <div class="urgency-card low" data-urgency="low" title="Filtra per urgenza Bassa">
-              <span class="card-count" id="countLow">0</span>
-              <span class="card-label">Bassa</span>
-            </div>
-          </div>
         </div>
 
         <!-- Filters & Search -->
@@ -215,35 +187,34 @@
 
       <!-- Main Calendar Area -->
       <main class="app-main">
-        <!-- Calendar Toolbar -->
+        <!-- Calendar Toolbar su 2 Livelli -->
         <div class="calendar-toolbar">
-          <div class="calendar-nav">
-            <button id="prevMonthBtn" class="btn-icon" title="Mese precedente">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
-            </button>
-            <button id="todayBtn" class="btn btn-secondary-sm">Oggi</button>
-            <button id="nextMonthBtn" class="btn-icon" title="Mese successivo">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-            </button>
-            <h2 id="currentMonthYearLabel" class="current-month-title">Luglio 2026</h2>
+          <!-- Livello 1: Navigazione Data / Mese -->
+          <div class="calendar-toolbar-row-top">
+            <div class="calendar-nav">
+              <button id="prevMonthBtn" class="btn-icon" title="Mese precedente">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              </button>
+              <button id="todayBtn" class="btn btn-secondary-sm">Oggi</button>
+              <button id="nextMonthBtn" class="btn-icon" title="Mese successivo">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </button>
+              <h2 id="currentMonthYearLabel" class="current-month-title">Luglio 2026</h2>
+            </div>
           </div>
 
-          <div class="category-quick-filters desktop-only">
-            <span class="filter-label">Filtra Categoria:</span>
-            <button class="cat-pill active" data-cat="all">Tutte</button>
-            <button class="cat-pill cat-lavoro" data-cat="lavoro">💼 Lavoro</button>
-            <button class="cat-pill cat-personale" data-cat="personale">👤 Personale</button>
-            <button class="cat-pill cat-studio" data-cat="studio">📚 Studio</button>
-            <button class="cat-pill cat-salute" data-cat="salute">🏥 Salute</button>
-            <button class="cat-pill cat-finanza" data-cat="finanza">💰 Finanza</button>
-            <button class="cat-pill cat-altro" data-cat="altro">🏷️ Altro</button>
-          </div>
-
-          <div class="legend-bar desktop-only">
-            <div class="legend-item"><span class="dot dot-critical"></span>Critica</div>
-            <div class="legend-item"><span class="dot dot-high"></span>Alta</div>
-            <div class="legend-item"><span class="dot dot-medium"></span>Media</div>
-            <div class="legend-item"><span class="dot dot-low"></span>Bassa</div>
+          <!-- Livello 2: Filtro Categoria con Pallini Colorati -->
+          <div class="calendar-toolbar-row-categories">
+            <div class="category-quick-filters">
+              <span class="filter-label">Filtra Categoria:</span>
+              <button class="cat-pill active" data-cat="all">Tutte</button>
+              <button class="cat-pill cat-lavoro" data-cat="lavoro"><span class="cat-dot cat-dot-lavoro"></span> Lavoro</button>
+              <button class="cat-pill cat-personale" data-cat="personale"><span class="cat-dot cat-dot-personale"></span> Personale</button>
+              <button class="cat-pill cat-studio" data-cat="studio"><span class="cat-dot cat-dot-studio"></span> Studio</button>
+              <button class="cat-pill cat-salute" data-cat="salute"><span class="cat-dot cat-dot-salute"></span> Salute</button>
+              <button class="cat-pill cat-finanza" data-cat="finanza"><span class="cat-dot cat-dot-finanza"></span> Finanza</button>
+              <button class="cat-pill cat-altro" data-cat="altro"><span class="cat-dot cat-dot-altro"></span> Altro</button>
+            </div>
           </div>
         </div>
 
