@@ -2165,10 +2165,21 @@
       }
 
       const submitBtn = document.getElementById('initialLoginSubmitBtn');
-      if (submitBtn) submitBtn.disabled = true;
+      let originalBtnText = '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        originalBtnText = submitBtn.innerHTML;
+        submitBtn.innerHTML = `<span>Connessione in corso...</span>`;
+      }
+
+      if (errorMsgEl) {
+        errorMsgEl.textContent = 'Connessione al server in corso, attendere...';
+        errorMsgEl.style.color = 'var(--accent-primary)';
+        errorMsgEl.classList.remove('hidden');
+      }
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
 
       fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
@@ -2179,20 +2190,36 @@
         .then(res => res.json())
         .then(data => {
           clearTimeout(timeoutId);
-          if (submitBtn) submitBtn.disabled = false;
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+          }
+          if (errorMsgEl) {
+            errorMsgEl.style.color = '';
+          }
+
           if (data && data.success) {
+            if (errorMsgEl) errorMsgEl.classList.add('hidden');
             AppState.setSession(data.username, data.token, data.role, data.displayName);
             if (onSuccessCallback) onSuccessCallback();
           } else {
             if (errorMsgEl) {
               errorMsgEl.textContent = (data && data.error) ? data.error : 'Credenziali non valide.';
+              errorMsgEl.style.color = '#ef4444';
               errorMsgEl.classList.remove('hidden');
             }
           }
         })
         .catch(() => {
           clearTimeout(timeoutId);
-          if (submitBtn) submitBtn.disabled = false;
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+          }
+          if (errorMsgEl) {
+            errorMsgEl.style.color = '';
+          }
+
           if (cleanUser === 'admin' && password === 'admin123') {
             AppState.setSession('admin', 'token_admin_local', 'admin', 'Amministratore');
             if (onSuccessCallback) onSuccessCallback();
@@ -2203,7 +2230,8 @@
             if (onSuccessCallback) onSuccessCallback();
           } else {
             if (errorMsgEl) {
-              errorMsgEl.textContent = 'Credenziali non valide. (Per admin usa admin / admin123)';
+              errorMsgEl.textContent = 'Impossibile contattare il server o credenziali non valide.';
+              errorMsgEl.style.color = '#ef4444';
               errorMsgEl.classList.remove('hidden');
             }
           }
