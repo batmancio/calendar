@@ -164,14 +164,34 @@ function hashPassword(password) {
 }
 
 function generateToken(username) {
-  const payload = { username, exp: Date.now() + (60 * 24 * 60 * 60 * 1000) }; // Token valido 60 giorni
-  return Buffer.from(JSON.stringify(payload)).toString('base64');
+  const payload = JSON.stringify({ username, exp: Date.now() + (60 * 24 * 60 * 60 * 1000) });
+  const encodedPayload = Buffer.from(payload).toString('base64url');
+  const signature = crypto.createHmac('sha256', JWT_SECRET).update(encodedPayload).digest('base64url');
+  return `${encodedPayload}.${signature}`;
 }
 
 function verifyToken(token) {
+  if (!token) return null;
   try {
-    const payload = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
-    if (payload.exp && payload.exp > Date.now()) {
+    const parts = token.split('.');
+    if (parts.length === 2) {
+      const [encodedPayload, signature] = parts;
+      const expectedSig = crypto.createHmac('sha256', JWT_SECRET).update(encodedPayload).digest('base64url');
+      const sigBuf = Buffer.from(signature);
+      const expBuf = Buffer.from(expectedSig);
+      if (sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf)) {
+        const payloadStr = Buffer.from(encodedPayload, 'base64url').toString('utf8');
+        const payload = JSON.parse(payloadStr);
+        if (payload && payload.username && payload.exp && payload.exp > Date.now()) {
+          return payload.username;
+        }
+      }
+      return null;
+    }
+    // Backward compatibility for legacy unsigned base64 tokens
+    const payloadStr = Buffer.from(token, 'base64').toString('utf8');
+    const payload = JSON.parse(payloadStr);
+    if (payload && payload.username && payload.exp && payload.exp > Date.now()) {
       return payload.username;
     }
   } catch (e) { }

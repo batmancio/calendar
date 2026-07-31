@@ -1173,10 +1173,15 @@ body {
 }
 
 .agenda-day-header {
-  font-size: 0.9rem;
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
   font-weight: 700;
-  color: var(--text-main);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
   margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--bg-card-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3359,4 +3364,20 @@ body {
   background: #f43f5e;
   border-color: #f43f5e;
   color: #ffffff;
+}
+
+/* Keyboard Focus Outlines for Accessibility */
+.calendar-cell:focus-visible,
+.cycle-day-cell:focus-visible,
+.calendar-cell:focus,
+.cycle-day-cell:focus {
+  outline: 2.5px solid var(--accent-primary);
+  outline-offset: -2px;
+  z-index: 5;
+}
+
+@media (max-width: 400px) {
+  .symptoms-checkbox-grid {
+    grid-template-columns: 1fr;
+  }
 }

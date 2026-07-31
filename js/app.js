@@ -683,8 +683,23 @@
     startRedisPolling() {
       if (this.syncIntervalId) clearInterval(this.syncIntervalId);
       this.syncIntervalId = setInterval(() => {
-        if (this.token) this.pullFromRedis();
+        if (this.token) {
+          if (this.hasPendingSync) {
+            this.pushToRedis();
+          } else {
+            this.pullFromRedis();
+          }
+        }
       }, 8000);
+
+      if (!this._onlineListenerBound) {
+        this._onlineListenerBound = true;
+        window.addEventListener('online', () => {
+          if (this.token && this.hasPendingSync) {
+            this.pushToRedis();
+          }
+        });
+      }
     },
 
     pushToRedis() {
@@ -703,8 +718,13 @@
           cycleLogs: this.cycleLogs
         })
       })
-        .then(res => { if (!res.ok) throw new Error('sync failed'); this.hasPendingSync = false; })
-        .catch(() => { this.hasPendingSync = true; });
+        .then(res => {
+          if (!res.ok) throw new Error('sync failed');
+          this.hasPendingSync = false;
+        })
+        .catch(() => {
+          this.hasPendingSync = true;
+        });
     },
 
     // Unisce la lista locale con quella remota tenendo per ogni id la versione con updatedAt più recente.
@@ -1156,10 +1176,129 @@
         selectedCycleDateStr = cellDateStr;
         renderCycleCalendarGrid();
         renderCycleLogForm(selectedCycleDateStr);
+
+        // Su schermi mobile / tablet (<992px) apri la finestra modale popup
+        if (window.innerWidth <= 992) {
+          openCycleLogModal(selectedCycleDateStr);
+        }
       });
 
       grid.appendChild(cell);
     }
+  }
+
+  function openCycleLogModal(dateStr) {
+    const targetDateStr = dateStr || selectedCycleDateStr || formatDateKey(new Date());
+    const modal = document.getElementById('cycleLogModal');
+    const titleEl = document.getElementById('cycleLogModalTitle');
+    const phaseEl = document.getElementById('cycleLogModalPhase');
+    const flowBox = document.getElementById('modalFlowSelector');
+    const moodBox = document.getElementById('modalMoodSelector');
+    const symptomsBox = document.getElementById('modalSymptomsGrid');
+    const tempInput = document.getElementById('modalCycleTempInput');
+    const notesInput = document.getElementById('modalCycleNotesInput');
+
+    if (!modal || !titleEl || !flowBox || !moodBox || !symptomsBox || !window.ChronosCycle) return;
+
+    const targetDateObj = window.ChronosCycle.parseDateKey(targetDateStr);
+    const dayFormatted = targetDateObj ? `${targetDateObj.getDate()} ${MONTH_NAMES_IT[targetDateObj.getMonth()]} ${targetDateObj.getFullYear()}` : targetDateStr;
+    titleEl.textContent = `Registro del ${dayFormatted}`;
+
+    const state = window.ChronosCycle.calculateCycleState(targetDateStr, AppState.cycleSettings);
+    if (phaseEl && state.enabled && state.phase) {
+      phaseEl.textContent = state.phase.name;
+      phaseEl.className = `phase-pill ${state.phase.badgeClass}`;
+    }
+
+    const log = AppState.getCycleLog(targetDateStr) || {};
+    let currentFlow = log.flow || 'none';
+    let currentMood = log.mood || '';
+    let currentSymptoms = new Set(log.symptoms || []);
+
+    // Flow buttons
+    flowBox.innerHTML = '';
+    window.ChronosCycle.FLOW_LEVELS.forEach(fl => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `flow-btn ${currentFlow === fl.id ? 'selected' : ''}`;
+      btn.textContent = `${fl.icon} ${fl.label}`;
+      btn.addEventListener('click', () => {
+        currentFlow = fl.id;
+        flowBox.querySelectorAll('.flow-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+      });
+      flowBox.appendChild(btn);
+    });
+
+    // Mood buttons
+    moodBox.innerHTML = '';
+    window.ChronosCycle.MOODS_LIST.forEach(m => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `mood-btn ${currentMood === m.id ? 'selected' : ''}`;
+      btn.textContent = `${m.icon} ${m.label}`;
+      btn.addEventListener('click', () => {
+        currentMood = currentMood === m.id ? '' : m.id;
+        moodBox.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+        if (currentMood) btn.classList.add('selected');
+      });
+      moodBox.appendChild(btn);
+    });
+
+    // Checkable Symptoms Chips with Checkbox
+    symptomsBox.className = 'symptoms-checkbox-grid';
+    symptomsBox.innerHTML = '';
+    window.ChronosCycle.SYMPTOMS_LIST.forEach(sym => {
+      const isSelected = currentSymptoms.has(sym.id);
+      const chip = document.createElement('div');
+      chip.className = `symptom-checkbox-chip ${isSelected ? 'selected' : ''}`;
+      chip.innerHTML = `
+        <span class="chip-box">${isSelected ? '✓' : ''}</span>
+        <span>${sym.icon}</span>
+        <span>${sym.label}</span>
+      `;
+      chip.addEventListener('click', () => {
+        if (currentSymptoms.has(sym.id)) {
+          currentSymptoms.delete(sym.id);
+          chip.classList.remove('selected');
+          const box = chip.querySelector('.chip-box');
+          if (box) box.textContent = '';
+        } else {
+          currentSymptoms.add(sym.id);
+          chip.classList.add('selected');
+          const box = chip.querySelector('.chip-box');
+          if (box) box.textContent = '✓';
+        }
+      });
+      symptomsBox.appendChild(chip);
+    });
+
+    if (tempInput) tempInput.value = log.temperature || '';
+    if (notesInput) notesInput.value = log.notes || '';
+
+    const form = document.getElementById('cycleLogModalForm');
+    if (form) {
+      form.onsubmit = (e) => {
+        e.preventDefault();
+        const tempVal = tempInput ? parseFloat(tempInput.value) : null;
+        const notesVal = notesInput ? notesInput.value.trim() : '';
+
+        AppState.setCycleLog(targetDateStr, {
+          flow: currentFlow,
+          mood: currentMood,
+          symptoms: Array.from(currentSymptoms),
+          temperature: isNaN(tempVal) ? null : tempVal,
+          notes: notesVal
+        });
+
+        modal.classList.add('hidden');
+        renderCycleCalendarGrid();
+        renderCycleLogForm(targetDateStr);
+        showToast('Registro del giorno salvato!');
+      };
+    }
+
+    modal.classList.remove('hidden');
   }
 
   function renderCycleLogForm(dateStr) {
@@ -1473,11 +1612,23 @@
         cell.classList.add('selected-day');
       }
 
-      cell.addEventListener('click', () => {
+      cell.setAttribute('tabindex', '0');
+      cell.setAttribute('role', 'button');
+      cell.setAttribute('aria-label', `Giorno ${displayDayNum}`);
+
+      const onSelectDay = () => {
         AppState.selectedDate = cellDateStr;
         document.querySelectorAll('.calendar-cell').forEach(c => c.classList.remove('selected-day'));
         cell.classList.add('selected-day');
         renderSelectedDayPanel(cellDateStr);
+      };
+
+      cell.addEventListener('click', onSelectDay);
+      cell.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelectDay();
+        }
       });
 
       addBtn.addEventListener('click', (e) => {
@@ -1663,7 +1814,7 @@
             itemCard.innerHTML = `
             <div>
               <div style="display:flex; align-items:center; flex-wrap:wrap; gap:4px;">
-                <strong style="color: var(--text-main); font-size: 0.88rem;">${escapeHtml(evt.title)}</strong>
+                <strong style="color: var(--text-main); font-size: 0.92rem; font-weight: 600;">${escapeHtml(evt.title)}</strong>
                 ${multiDayBadge}
               </div>
               <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">${timeFormatted}</div>
@@ -1676,7 +1827,7 @@
             const catClass = task.category ? `cat-${task.category}` : 'cat-altro';
             itemCard.innerHTML = `
             <div>
-              <strong style="color: var(--text-main); font-size: 0.88rem; ${task.status === 'completed' ? 'text-decoration: line-through; color: var(--text-dim);' : ''}">${escapeHtml(task.title)}</strong>
+              <strong style="color: var(--text-main); font-size: 0.92rem; font-weight: 600; ${task.status === 'completed' ? 'text-decoration: line-through; color: var(--text-dim);' : ''}">${escapeHtml(task.title)}</strong>
               <div style="font-size: 0.75rem; color: var(--text-muted);">Urgenza: ${task.urgency.toUpperCase()}</div>
             </div>
             <div style="display:flex; gap:6px; align-items:center;">
@@ -3211,6 +3362,13 @@
           }
         });
       });
+
+      const openCycleLogModalBtn = document.getElementById('openCycleLogModalBtn');
+      if (openCycleLogModalBtn) {
+        openCycleLogModalBtn.addEventListener('click', () => {
+          openCycleLogModal(selectedCycleDateStr);
+        });
+      }
 
       if (cycleInitSetupBtn) cycleInitSetupBtn.addEventListener('click', openCycleSettingsModal);
       if (openCycleSettingsBtn) openCycleSettingsBtn.addEventListener('click', openCycleSettingsModal);

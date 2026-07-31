@@ -24,7 +24,7 @@
     rel="stylesheet">
 
   <!-- CSS Styles -->
-  <link rel="stylesheet" href="style.css?v=17">
+  <link rel="stylesheet" href="style.css?v=18">
 </head>
 
 <body>
@@ -351,6 +351,13 @@
                 <span id="cycleHeaderNextBadge" class="cycle-inline-badge info">Prossimo ciclo tra -- gg</span>
               </div>
               <div class="cycle-action-btns">
+                <button id="openCycleLogModalBtn" class="btn btn-primary btn-sm" title="Registra Sintomi del Giorno">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  <span>Registra Sintomi</span>
+                </button>
                 <button id="openCycleSettingsBtn" class="btn btn-secondary-sm" title="Impostazioni Ciclo">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="3"></circle>
@@ -988,6 +995,61 @@
     </div>
   </div>
 
+  <!-- Modal: Registro Giornaliero Ciclo & Sintomi -->
+  <div id="cycleLogModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3 id="cycleLogModalTitle">Registro del --</h3>
+          <span id="cycleLogModalPhase" class="phase-pill">--</span>
+        </div>
+        <button class="btn-icon modal-close" data-close="cycleLogModal">&times;</button>
+      </div>
+      <form id="cycleLogModalForm" class="modal-form">
+        <!-- Flusso Mestruale -->
+        <div class="form-group">
+          <label>Flusso Mestruale</label>
+          <div class="flow-selector" id="modalFlowSelector">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Umore -->
+        <div class="form-group">
+          <label>Stato d'Animo / Umore</label>
+          <div class="mood-selector" id="modalMoodSelector">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Sintomi -->
+        <div class="form-group">
+          <label>Sintomi Fisici</label>
+          <div class="symptoms-grid" id="modalSymptomsGrid">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Note e Temperatura -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="modalCycleTempInput">Temp. Basale (°C)</label>
+            <input type="number" id="modalCycleTempInput" step="0.1" placeholder="Es. 36.6">
+          </div>
+          <div class="form-group full-width">
+            <label for="modalCycleNotesInput">Note / Annotazioni</label>
+            <input type="text" id="modalCycleNotesInput" placeholder="Sintomi specifici, benessere...">
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-tertiary modal-close" data-close="cycleLogModal">Annulla</button>
+          <button type="submit" class="btn btn-primary">Salva Registro del Giorno</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Toast Container -->
   <div id="toastContainer" class="toast-container"></div>
 
@@ -995,8 +1057,8 @@
   <input type="date" id="taskDateAssignInput" class="visually-hidden-date-input" aria-hidden="true">
 
   <!-- JavaScript -->
-  <script src="js/cycle.js?v=1"></script>
-  <script src="js/app.js?v=17"></script>
+  <script src="js/cycle.js?v=18"></script>
+  <script src="js/app.js?v=18"></script>
 </body>
 
 </html>

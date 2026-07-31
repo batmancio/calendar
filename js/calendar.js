@@ -230,12 +230,23 @@ function renderMonthGrid(container, year, month) {
       cell.classList.add('selected-day');
     }
 
-    // Gestione click sulla cella (Selezione giorno per pannello in basso)
-    cell.addEventListener('click', () => {
+    cell.setAttribute('tabindex', '0');
+    cell.setAttribute('role', 'button');
+    cell.setAttribute('aria-label', `Giorno ${displayDayNum}`);
+
+    const onSelectDay = () => {
       AppState.selectedDate = cellDateStr;
       document.querySelectorAll('.calendar-cell').forEach(c => c.classList.remove('selected-day'));
       cell.classList.add('selected-day');
       renderSelectedDayPanel(cellDateStr);
+    };
+
+    cell.addEventListener('click', onSelectDay);
+    cell.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onSelectDay();
+      }
     });
 
     setupCellDragAndDrop(cell, cellDateStr);
@@ -305,7 +316,6 @@ export function renderSelectedDayPanel(dateStr) {
     item.onclick = () => openTaskDetailModal ? openTaskDetailModal(task) : openTaskModal(task);
     list.appendChild(item);
   });
-}
 }
 
 // Drag & Drop per le celle del calendario
