@@ -2957,47 +2957,53 @@ body {
   gap: 16px;
 }
 
-/* Header Card Ciclo & Benessere */
-.cycle-header-card {
+/* Ultra-compact Header Card Ciclo & Benessere */
+.cycle-header-card.compact {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
   background: #ffffff;
   border: 1px solid var(--bg-card-border);
-  border-radius: var(--radius-md);
-  padding: 16px 18px;
   box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
 }
-.cycle-header-top-row {
+.cycle-header-main-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
+}
+.cycle-brand-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   flex-wrap: wrap;
 }
-.cycle-brand-title h3 {
-  font-size: 1.15rem;
+.cycle-compact-title {
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--text-main);
   margin: 0;
+}
+.cycle-compact-subtitle {
   display: flex;
   align-items: center;
   gap: 6px;
+  font-size: 0.78rem;
 }
-.cycle-action-btns {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: nowrap;
+.compact-phase-text {
+  font-weight: 700;
+  color: #e11d48;
 }
-.cycle-action-btns .btn {
-  white-space: nowrap;
+.compact-separator {
+  color: #cbd5e1;
 }
-.cycle-status-pills {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+.compact-day-text {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.compact-settings-btn {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  height: 30px;
 }
 
 /* Cycle Header Inline Badges */
@@ -3125,14 +3131,9 @@ body {
 /* Main Layout Grid inside Cycle View */
 .cycle-main-grid {
   display: grid;
-  grid-template-columns: 1fr 360px;
+  grid-template-columns: 1fr;
   gap: 16px;
   align-items: start;
-}
-@media (max-width: 992px) {
-  .cycle-main-grid {
-    grid-template-columns: 1fr;
-  }
 }
 .cycle-calendar-box {
   background: #ffffff;
@@ -3152,12 +3153,12 @@ body {
   padding-bottom: 4px;
 }
 
-/* Legenda Fasi (Posizionata in alto con stile Pill) */
+/* Legenda Fasi (Solamente 2 fasi: Ciclo e Ovulazione Arancione) */
 .cycle-legend {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 16px;
   flex-wrap: wrap;
   padding: 8px 0;
   margin-bottom: 4px;
@@ -3168,11 +3169,11 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 4px 12px;
   background: #f8fafc;
   border: 1px solid var(--bg-card-border);
   border-radius: 12px;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-main);
 }
@@ -3184,9 +3185,7 @@ body {
   flex-shrink: 0;
 }
 .legend-dot.phase-menstrual { background: #f43f5e; box-shadow: 0 0 0 2px #ffe4e6; }
-.legend-dot.phase-follicular { background: #10b981; box-shadow: 0 0 0 2px #d1fae5; }
-.legend-dot.phase-ovulatory { background: #ec4899; box-shadow: 0 0 0 2px #fce7f3; }
-.legend-dot.phase-luteal { background: #f59e0b; box-shadow: 0 0 0 2px #fef3c7; }
+.legend-dot.phase-ovulatory { background: #f97316; box-shadow: 0 0 0 2px #ffedd5; }
 
 .cycle-calendar-grid {
   display: grid;
@@ -3242,18 +3241,68 @@ body {
   outline-offset: -1px;
 }
 
-/* Phase Linear Top Border Accents & Subtle Soft Tints */
-.cycle-day-cell.phase-menstrual { border-top-color: #f43f5e !important; background: rgba(254, 242, 242, 0.5); }
-.cycle-day-cell.phase-menstrual .day-number { color: #e11d48; }
+/* Colorazione per 2 sole Fasi (Mestruazione Rosso & Ovulazione Arancione) */
+.cycle-day-cell.phase-menstrual { border-top-color: #f43f5e !important; background: rgba(254, 242, 242, 0.6); }
+.cycle-day-cell.phase-menstrual .day-number { color: #e11d48; font-weight: 700; }
 
-.cycle-day-cell.phase-follicular { border-top-color: #10b981 !important; background: rgba(236, 253, 245, 0.5); }
-.cycle-day-cell.phase-follicular .day-number { color: #047857; }
+.cycle-day-cell.phase-ovulatory { border-top-color: #f97316 !important; background: rgba(255, 247, 237, 0.6); }
+.cycle-day-cell.phase-ovulatory .day-number { color: #c2410c; font-weight: 700; }
 
-.cycle-day-cell.phase-ovulatory { border-top-color: #ec4899 !important; background: rgba(253, 242, 248, 0.5); }
-.cycle-day-cell.phase-ovulatory .day-number { color: #be185d; }
+/* Neutral per Follicolare e Luteale */
+.cycle-day-cell.phase-follicular,
+.cycle-day-cell.phase-luteal {
+  border-top-color: #e2e8f0 !important;
+  background: #ffffff;
+}
 
-.cycle-day-cell.phase-luteal { border-top-color: #f59e0b !important; background: rgba(254, 243, 199, 0.4); }
-.cycle-day-cell.phase-luteal .day-number { color: #b45309; }
+/* Symptom Modal Popup with Rounded Cards & Internal Scroll */
+.cycle-log-modal-card {
+  max-width: 480px !important;
+  width: 92% !important;
+  max-height: 85vh;
+  border-radius: 20px !important;
+  padding: 20px !important;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.18) !important;
+  border: 1px solid rgba(255, 255, 255, 0.8) !important;
+}
+.cycle-modal-scrollable {
+  max-height: calc(85vh - 75px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cycle-modal-scrollable::-webkit-scrollbar {
+  width: 5px;
+}
+.cycle-modal-scrollable::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.modal-section-card {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.15s ease;
+}
+.modal-section-card:hover {
+  border-color: #cbd5e1;
+}
+.modal-section-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
 
 /* Visual Tags on Calendar Day Cells */
 .day-tags-container {

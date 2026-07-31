@@ -1184,12 +1184,7 @@
       cell.addEventListener('click', () => {
         selectedCycleDateStr = cellDateStr;
         renderCycleCalendarGrid();
-        renderCycleLogForm(selectedCycleDateStr);
-
-        // Su schermi mobile / tablet (<992px) apri la finestra modale popup
-        if (window.innerWidth <= 992) {
-          openCycleLogModal(selectedCycleDateStr);
-        }
+        openCycleLogModal(selectedCycleDateStr);
       });
 
       grid.appendChild(cell);

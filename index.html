@@ -342,22 +342,20 @@
 
           <!-- Main Cycle Dashboard when configured -->
           <div id="cycleDashboard" class="cycle-dashboard-wrapper">
-            <!-- Header Card Ciclo -->
-            <div class="cycle-header-card">
-              <div class="cycle-header-top-row">
-                <div class="cycle-brand-title">
-                  <h3>🌸 Ciclo & Benessere</h3>
+            <!-- Ultra-compact Header Card Ciclo -->
+            <div class="cycle-header-card compact">
+              <div class="cycle-header-main-row">
+                <div class="cycle-brand-info">
+                  <h3 class="cycle-compact-title">🌸 Ciclo & Benessere</h3>
+                  <div class="cycle-compact-subtitle">
+                    <span id="cycleCurrentPhaseBadge" class="compact-phase-text">Fase Mestruale</span>
+                    <span class="compact-separator">•</span>
+                    <span id="cycleHeaderDayBadge" class="compact-day-text">Giorno 1 del ciclo</span>
+                  </div>
                 </div>
-                <div class="cycle-action-btns">
-                  <button id="openCycleLogModalBtn" class="btn btn-primary btn-sm" title="Registra Sintomi del Giorno">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <line x1="12" y1="5" x2="12" y2="19"></line>
-                      <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    <span>Registra Sintomi</span>
-                  </button>
-                  <button id="openCycleSettingsBtn" class="btn btn-secondary-sm" title="Impostazioni Ciclo">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <div class="cycle-header-actions">
+                  <button id="openCycleSettingsBtn" class="btn btn-secondary-sm compact-settings-btn" title="Impostazioni Ciclo">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <circle cx="12" cy="12" r="3"></circle>
                       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                     </svg>
@@ -365,15 +363,9 @@
                   </button>
                 </div>
               </div>
-
-              <div class="cycle-status-pills">
-                <span id="cycleCurrentPhaseBadge" class="phase-badge phase-menstrual">Fase Mestruale</span>
-                <span id="cycleHeaderDayBadge" class="cycle-inline-badge">Giorno 1 del ciclo</span>
-                <span id="cycleHeaderNextBadge" class="cycle-inline-badge info">Prossimo ciclo tra -- gg</span>
-              </div>
             </div>
 
-            <!-- Main Layout: Left = Cycle Calendar, Right = Daily Symptom Logger -->
+            <!-- Main Layout: Cycle Calendar & Log Form -->
             <div class="cycle-main-grid">
               <!-- Left: Dedicated Cycle Calendar -->
               <div class="cycle-calendar-box">
@@ -391,12 +383,10 @@
                   </button>
                 </div>
 
-                <!-- Legenda Fasi (Posizionata in rilievo sopra il calendario) -->
-                <div class="cycle-legend">
-                  <span class="legend-item"><span class="legend-dot phase-menstrual"></span> Mestruazione</span>
-                  <span class="legend-item"><span class="legend-dot phase-follicular"></span> Follicolare</span>
-                  <span class="legend-item"><span class="legend-dot phase-ovulatory"></span> Fertile / Ovulazione</span>
-                  <span class="legend-item"><span class="legend-dot phase-luteal"></span> Luteale / PMS</span>
+                <!-- Legenda Fasi (Solamente 2 fasi: Ciclo e Ovulazione) -->
+                <div class="cycle-legend compact-legend">
+                  <span class="legend-item"><span class="legend-dot phase-menstrual"></span> Ciclo</span>
+                  <span class="legend-item"><span class="legend-dot phase-ovulatory"></span> Ovulazione</span>
                 </div>
 
                 <div class="calendar-days-header">
@@ -1000,9 +990,9 @@
     </div>
   </div>
 
-  <!-- Modal: Registro Giornaliero Ciclo & Sintomi -->
+  <!-- Modal: Registro Giornaliero Ciclo & Sintomi (con Riquadri Tondi e Scroll Interno) -->
   <div id="cycleLogModal" class="modal-backdrop hidden">
-    <div class="modal-card">
+    <div class="modal-card cycle-log-modal-card">
       <div class="modal-header">
         <div>
           <h3 id="cycleLogModalTitle">Registro del --</h3>
@@ -1010,40 +1000,42 @@
         </div>
         <button class="btn-icon modal-close" data-close="cycleLogModal">&times;</button>
       </div>
-      <form id="cycleLogModalForm" class="modal-form">
-        <!-- Flusso Mestruale -->
-        <div class="form-group">
-          <label>Flusso Mestruale</label>
+      <form id="cycleLogModalForm" class="modal-form cycle-modal-scrollable">
+        <!-- Flusso Mestruale in Riquadro Tondo -->
+        <div class="modal-section-card">
+          <label class="modal-section-title">Flusso Mestruale</label>
           <div class="flow-selector" id="modalFlowSelector">
             <!-- Rendered by JS -->
           </div>
         </div>
 
-        <!-- Umore -->
-        <div class="form-group">
-          <label>Stato d'Animo / Umore</label>
+        <!-- Umore in Riquadro Tondo -->
+        <div class="modal-section-card">
+          <label class="modal-section-title">Stato d'Animo / Umore</label>
           <div class="mood-selector" id="modalMoodSelector">
             <!-- Rendered by JS -->
           </div>
         </div>
 
-        <!-- Sintomi -->
-        <div class="form-group">
-          <label>Sintomi Fisici</label>
+        <!-- Sintomi Fisici in Riquadro Tondo -->
+        <div class="modal-section-card">
+          <label class="modal-section-title">Sintomi Fisici</label>
           <div class="symptoms-grid" id="modalSymptomsGrid">
             <!-- Rendered by JS -->
           </div>
         </div>
 
-        <!-- Note e Temperatura -->
-        <div class="form-row">
-          <div class="form-group">
-            <label for="modalCycleTempInput">Temp. Basale (°C)</label>
-            <input type="number" id="modalCycleTempInput" step="0.1" placeholder="Es. 36.6">
-          </div>
-          <div class="form-group full-width">
-            <label for="modalCycleNotesInput">Note / Annotazioni</label>
-            <input type="text" id="modalCycleNotesInput" placeholder="Sintomi specifici, benessere...">
+        <!-- Note e Temperatura in Riquadro Tondo -->
+        <div class="modal-section-card">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="modalCycleTempInput">Temp. Basale (°C)</label>
+              <input type="number" id="modalCycleTempInput" step="0.1" placeholder="Es. 36.6" class="form-input-styled">
+            </div>
+            <div class="form-group full-width">
+              <label for="modalCycleNotesInput">Note / Annotazioni</label>
+              <input type="text" id="modalCycleNotesInput" placeholder="Sintomi specifici, benessere..." class="form-input-styled">
+            </div>
           </div>
         </div>
 

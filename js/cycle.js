@@ -36,10 +36,10 @@ const CYCLE_PHASES = {
     key: 'ovulatory',
     name: 'Ovulazione',
     icon: '🌸',
-    color: '#ec4899',
+    color: '#f97316',
     badgeClass: 'phase-ovulatory',
-    label: 'Finestra Fertile & Ovulazione',
-    tip: 'Picco di energia e vitalità. Massima fertilità e creatività.'
+    label: 'Ovulazione',
+    tip: 'Picco di energia e vitalità. Massima fertilità.'
   },
   luteal: {
     key: 'luteal',
