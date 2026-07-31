@@ -32,15 +32,6 @@
     <!-- Header App -->
     <header class="app-header">
       <div class="header-brand">
-        <button id="toggleSidebarMobileBtn" class="btn-icon mobile-only-inline" title="Gestione Account">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-            stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="5" r="1.5"></circle>
-            <circle cx="12" cy="12" r="1.5"></circle>
-            <circle cx="12" cy="19" r="1.5"></circle>
-          </svg>
-        </button>
-
         <!-- Account Trigger a Sinistra di Planner -->
         <div id="accountUserWidget" class="account-widget">
           <button id="openAuthModalBtn" class="btn btn-secondary-sm" title="Accedi">
@@ -230,110 +221,56 @@
 
     <!-- Main Layout -->
     <div class="app-layout">
-      <!-- Sidebar Overlay (Mobile) -->
-      <div id="sidebarOverlay" class="sidebar-overlay"></div>
-
-      <!-- Sidebar -->
-      <aside id="appSidebar" class="app-sidebar">
-        <!-- Bottom Sheet Handle (Mobile) -->
-        <div class="bottom-sheet-handle mobile-only">
-          <span class="handle-bar"></span>
-        </div>
-        <div class="sidebar-header-mobile mobile-only">
-          <h3>Memo & Filtri</h3>
-          <button id="closeSidebarMobileBtn" class="btn-icon">&times;</button>
-        </div>
-
-        <!-- Filters & Search -->
-        <div class="sidebar-section filters-section">
-          <div class="search-box">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input type="text" id="taskSearchInput" placeholder="Cerca tra eventi e memo...">
-          </div>
-
-          <div class="filter-group">
-            <label for="filterCategory">Categoria</label>
-            <select id="filterCategory" class="custom-select">
-              <option value="all">Tutte le Categorie</option>
-              <option value="lavoro">🔵 Lavoro</option>
-              <option value="personale">🟢 Personale</option>
-              <option value="studio">🟠 Studio</option>
-              <option value="salute">🔴 Salute</option>
-              <option value="finanza">🟣 Finanza</option>
-              <option value="altro">⚫ Altro</option>
-            </select>
-          </div>
-
-          <div class="filter-group">
-            <label for="filterUrgency">Urgenza</label>
-            <select id="filterUrgency" class="custom-select">
-              <option value="all">Tutte le Urgenze</option>
-              <option value="critical">Critica</option>
-              <option value="high">Alta</option>
-              <option value="medium">Media</option>
-              <option value="low">Bassa</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Task & Memo Drawer List -->
-        <div class="sidebar-section memo-drawer-section">
-          <div class="drawer-header">
-            <div class="drawer-tabs">
-              <button id="tabUndatedMemo" class="tab-sub active">Memo Sospesi</button>
-              <button id="tabAllTasks" class="tab-sub">Tutti i Memo</button>
-            </div>
-            <span class="badge-count" id="drawerTaskCount">0</span>
-          </div>
-
-          <div class="task-list-scroll" id="sidebarTaskList">
-            <!-- Dynamic task items -->
-          </div>
-        </div>
-      </aside>
-
       <!-- Main Calendar Area -->
       <main class="app-main">
-        <!-- Calendar Toolbar su 2 Livelli -->
+        <!-- Calendar Toolbar Unificato & Centrato Glassmorphic Card -->
         <div class="calendar-toolbar">
-          <!-- Livello 1: Navigazione Data / Mese -->
-          <div class="calendar-toolbar-row-top">
-            <div class="calendar-nav">
-              <button id="prevMonthBtn" class="btn-icon" title="Mese precedente">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="15 18 9 12 15 6"></polyline>
-                </svg>
-              </button>
-              <button id="todayBtn" class="btn btn-secondary-sm">Oggi</button>
-              <button id="nextMonthBtn" class="btn-icon" title="Mese successivo">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="9 18 15 12 9 6"></polyline>
-                </svg>
-              </button>
-              <h2 id="currentMonthYearLabel" class="current-month-title">Luglio 2026</h2>
-            </div>
-          </div>
+          <div class="calendar-toolbar-card">
+            <div class="calendar-toolbar-row-top">
+              <div class="calendar-toolbar-left">
+                <button id="todayBtn" class="btn-today-pill" title="Vai a Oggi">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 8v4l3 3"></path>
+                  </svg>
+                  <span>Oggi</span>
+                </button>
+              </div>
 
-          <!-- Livello 2: Filtro Categoria con Pallini Colorati -->
-          <div class="calendar-toolbar-row-categories">
-            <div class="category-quick-filters">
-              <span class="filter-label">Filtra Categoria:</span>
-              <button class="cat-pill active" data-cat="all">Tutte</button>
-              <button class="cat-pill cat-lavoro" data-cat="lavoro"><span class="cat-dot cat-dot-lavoro"></span>
-                Lavoro</button>
-              <button class="cat-pill cat-personale" data-cat="personale"><span
-                  class="cat-dot cat-dot-personale"></span> Personale</button>
-              <button class="cat-pill cat-studio" data-cat="studio"><span class="cat-dot cat-dot-studio"></span>
-                Studio</button>
-              <button class="cat-pill cat-salute" data-cat="salute"><span class="cat-dot cat-dot-salute"></span>
-                Salute</button>
-              <button class="cat-pill cat-finanza" data-cat="finanza"><span class="cat-dot cat-dot-finanza"></span>
-                Finanza</button>
-              <button class="cat-pill cat-altro" data-cat="altro"><span class="cat-dot cat-dot-altro"></span>
-                Altro</button>
+              <div class="calendar-nav-centered">
+                <button id="prevMonthBtn" class="btn-icon btn-month-nav" title="Mese precedente">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                  </svg>
+                </button>
+                <h2 id="currentMonthYearLabel" class="current-month-title">Luglio 2026</h2>
+                <button id="nextMonthBtn" class="btn-icon btn-month-nav" title="Mese successivo">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              </div>
+
+              <div class="calendar-toolbar-right"></div>
+            </div>
+
+            <!-- Livello 2: Filtri Categorie Chip Moderni -->
+            <div class="calendar-toolbar-row-categories">
+              <div class="category-quick-filters">
+                <button class="cat-pill active" data-cat="all">Tutte</button>
+                <button class="cat-pill cat-lavoro" data-cat="lavoro"><span class="cat-dot cat-dot-lavoro"></span>
+                  Lavoro</button>
+                <button class="cat-pill cat-personale" data-cat="personale"><span
+                    class="cat-dot cat-dot-personale"></span> Personale</button>
+                <button class="cat-pill cat-studio" data-cat="studio"><span class="cat-dot cat-dot-studio"></span>
+                  Studio</button>
+                <button class="cat-pill cat-salute" data-cat="salute"><span class="cat-dot cat-dot-salute"></span>
+                  Salute</button>
+                <button class="cat-pill cat-finanza" data-cat="finanza"><span class="cat-dot cat-dot-finanza"></span>
+                  Finanza</button>
+                <button class="cat-pill cat-altro" data-cat="altro"><span class="cat-dot cat-dot-altro"></span>
+                  Altro</button>
+              </div>
             </div>
           </div>
         </div>
@@ -410,6 +347,8 @@
               <div class="cycle-title-wrap">
                 <h3>🌸 Ciclo & Benessere</h3>
                 <span id="cycleCurrentPhaseBadge" class="phase-badge phase-menstrual">Fase Mestruale</span>
+                <span id="cycleHeaderDayBadge" class="cycle-inline-badge">Giorno 1 del ciclo</span>
+                <span id="cycleHeaderNextBadge" class="cycle-inline-badge info">Prossimo ciclo tra -- gg</span>
               </div>
               <div class="cycle-action-btns">
                 <button id="openCycleSettingsBtn" class="btn btn-secondary-sm" title="Impostazioni Ciclo">
@@ -419,36 +358,6 @@
                   </svg>
                   <span>Impostazioni</span>
                 </button>
-              </div>
-            </div>
-
-            <!-- Hero Summary Cards (3 cards grid) -->
-            <div class="cycle-hero-grid">
-              <div class="cycle-card cycle-card-hero">
-                <div class="cycle-card-icon" id="cyclePhaseIcon">🩸</div>
-                <div class="cycle-card-body">
-                  <span class="card-subtitle">Stato Attuale</span>
-                  <h4 id="cycleDayTitle">Giorno 1 del ciclo</h4>
-                  <p id="cyclePhaseDesc" class="card-desc">Fase Mestruale in corso</p>
-                </div>
-              </div>
-
-              <div class="cycle-card cycle-card-hero">
-                <div class="cycle-card-icon">📅</div>
-                <div class="cycle-card-body">
-                  <span class="card-subtitle">Previsioni</span>
-                  <h4 id="cycleNextPeriodCountdown">Prossimo ciclo tra -- giorni</h4>
-                  <p id="cycleNextPeriodSub" class="card-desc">Inizio previsto: --</p>
-                </div>
-              </div>
-
-              <div class="cycle-card cycle-card-hero">
-                <div class="cycle-card-icon">✨</div>
-                <div class="cycle-card-body">
-                  <span class="card-subtitle">Consiglio Benessere</span>
-                  <h4 id="cycleTipTitle">Ascolta il tuo corpo</h4>
-                  <p id="cycleTipBody" class="card-desc">Riposo e buona idratazione.</p>
-                </div>
               </div>
             </div>
 
@@ -606,13 +515,6 @@
         <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
       </svg>
       <span>Ciclo</span>
-    </button>
-    <button class="bottom-nav-item" id="bottomNavSidebarBtn">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="11" cy="11" r="8"></circle>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-      </svg>
-      <span>Filtri</span>
     </button>
   </nav>
 
@@ -1034,32 +936,47 @@
       <form id="cycleSettingsForm" class="modal-form">
         <div class="form-group">
           <label for="cycleLastPeriodStartInput">Inizio dell'ultimo ciclo mestruale *</label>
-          <input type="date" id="cycleLastPeriodStartInput" required>
+          <input type="date" id="cycleLastPeriodStartInput" required class="form-input-styled">
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label for="cycleAvgLengthInput">Durata media ciclo (giorni) *</label>
-            <input type="number" id="cycleAvgLengthInput" min="20" max="45" value="28" required>
+            <div class="stepper-input-container">
+              <button type="button" class="stepper-btn stepper-minus" data-target="cycleAvgLengthInput" title="Riduci giorni">&minus;</button>
+              <input type="number" id="cycleAvgLengthInput" min="20" max="45" value="28" required class="stepper-input-val">
+              <button type="button" class="stepper-btn stepper-plus" data-target="cycleAvgLengthInput" title="Aumenta giorni">&plus;</button>
+            </div>
             <small class="help-text">Di norma tra 21 e 35 giorni.</small>
           </div>
           <div class="form-group">
             <label for="cyclePeriodLengthInput">Durata mestruazioni (giorni) *</label>
-            <input type="number" id="cyclePeriodLengthInput" min="2" max="10" value="5" required>
+            <div class="stepper-input-container">
+              <button type="button" class="stepper-btn stepper-minus" data-target="cyclePeriodLengthInput" title="Riduci giorni">&minus;</button>
+              <input type="number" id="cyclePeriodLengthInput" min="2" max="10" value="5" required class="stepper-input-val">
+              <button type="button" class="stepper-btn stepper-plus" data-target="cyclePeriodLengthInput" title="Aumenta giorni">&plus;</button>
+            </div>
             <small class="help-text">Di norma tra 3 e 7 giorni.</small>
           </div>
         </div>
 
         <div class="form-group">
           <label for="cycleLutealLengthInput">Durata fase luteale (giorni)</label>
-          <input type="number" id="cycleLutealLengthInput" min="10" max="16" value="14">
+          <div class="stepper-input-container" style="max-width: 220px;">
+            <button type="button" class="stepper-btn stepper-minus" data-target="cycleLutealLengthInput" title="Riduci giorni">&minus;</button>
+            <input type="number" id="cycleLutealLengthInput" min="10" max="16" value="14" class="stepper-input-val">
+            <button type="button" class="stepper-btn stepper-plus" data-target="cycleLutealLengthInput" title="Aumenta giorni">&plus;</button>
+          </div>
           <small class="help-text">Predefinito: 14 giorni (intervallo tra ovulazione e ciclo successivo).</small>
         </div>
 
-        <div class="form-group checkbox-group" style="margin-top: 8px;">
-          <label class="checkbox-label">
-            <input type="checkbox" id="cycleDiscreteNotificationsInput" checked>
-            <span>Usa notifiche push discrete (testo riservato orientato alla privacy)</span>
+        <div class="form-group modern-switch-group" style="margin-top: 10px;">
+          <label class="modern-switch-label" for="cycleDiscreteNotificationsInput">
+            <div class="switch-toggle-wrap">
+              <input type="checkbox" id="cycleDiscreteNotificationsInput" checked class="modern-switch-checkbox">
+              <span class="modern-switch-slider"></span>
+            </div>
+            <span class="modern-switch-text">Usa notifiche push discrete (testo riservato orientato alla privacy)</span>
           </label>
         </div>
 

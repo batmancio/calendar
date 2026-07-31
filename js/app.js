@@ -971,6 +971,15 @@
       todayBtn.title = `Torna a Oggi (${todayDay} ${todayMonthName})`;
     }
 
+    const calendarToolbar = document.querySelector('.calendar-toolbar');
+    if (calendarToolbar) {
+      if (AppState.currentView === 'cycle' || AppState.currentView === 'memo') {
+        calendarToolbar.classList.add('hidden');
+      } else {
+        calendarToolbar.classList.remove('hidden');
+      }
+    }
+
     if (AppState.currentView === 'month') {
       if (viewMonthContainer) viewMonthContainer.classList.remove('hidden');
       if (viewAgendaContainer) viewAgendaContainer.classList.add('hidden');
@@ -1018,32 +1027,22 @@
 
     const todayState = window.ChronosCycle ? window.ChronosCycle.calculateCycleState(new Date(), settings) : { enabled: false };
 
-    // Header badge
+    // Header inline badges
     const phaseBadge = document.getElementById('cycleCurrentPhaseBadge');
     if (phaseBadge && todayState.phase) {
       phaseBadge.textContent = todayState.phase.label;
       phaseBadge.className = `phase-badge ${todayState.phase.badgeClass}`;
     }
 
-    // Card 1
-    const phaseIcon = document.getElementById('cyclePhaseIcon');
-    const dayTitle = document.getElementById('cycleDayTitle');
-    const phaseDesc = document.getElementById('cyclePhaseDesc');
-    if (phaseIcon) phaseIcon.textContent = todayState.phase ? todayState.phase.icon : '🌸';
-    if (dayTitle) dayTitle.textContent = `Giorno ${todayState.dayOfCycle || 1} del ciclo`;
-    if (phaseDesc) phaseDesc.textContent = todayState.phase ? todayState.phase.name + ' in corso' : '';
+    const dayBadge = document.getElementById('cycleHeaderDayBadge');
+    if (dayBadge) {
+      dayBadge.textContent = `Giorno ${todayState.dayOfCycle || 1} del ciclo`;
+    }
 
-    // Card 2
-    const countdownTitle = document.getElementById('cycleNextPeriodCountdown');
-    const countdownSub = document.getElementById('cycleNextPeriodSub');
-    if (countdownTitle) countdownTitle.textContent = `Prossimo ciclo tra ${todayState.daysUntilNextPeriod || 0} giorni`;
-    if (countdownSub) countdownSub.textContent = `Inizio previsto: ${todayState.nextPeriodStartStr || '--'}`;
-
-    // Card 3
-    const tipTitle = document.getElementById('cycleTipTitle');
-    const tipBody = document.getElementById('cycleTipBody');
-    if (tipTitle) tipTitle.textContent = todayState.phase ? todayState.phase.label : 'Consiglio Benessere';
-    if (tipBody) tipBody.textContent = todayState.phase ? todayState.phase.tip : 'Mantieni una buona idratazione e rispetta i ritmi del tuo corpo.';
+    const nextBadge = document.getElementById('cycleHeaderNextBadge');
+    if (nextBadge) {
+      nextBadge.textContent = `Prossimo ciclo tra ${todayState.daysUntilNextPeriod || 0} gg (${todayState.nextPeriodStartStr || '--'})`;
+    }
 
     renderCycleCalendarGrid();
     renderCycleLogForm(selectedCycleDateStr);
@@ -1112,12 +1111,45 @@
       numSpan.textContent = displayDayNum;
       cell.appendChild(numSpan);
 
+      // Render Visual Day Tags inside cell
       const existingLog = AppState.getCycleLog(cellDateStr);
-      if (existingLog && (existingLog.flow !== 'none' || (existingLog.symptoms && existingLog.symptoms.length > 0) || existingLog.mood)) {
-        const logDot = document.createElement('span');
-        logDot.textContent = existingLog.flow === 'heavy' ? '🩸' : (existingLog.flow === 'medium' ? '💧' : '✍️');
-        logDot.style.fontSize = '0.7rem';
-        cell.appendChild(logDot);
+      if (existingLog && window.ChronosCycle) {
+        const tagsContainer = document.createElement('div');
+        tagsContainer.className = 'day-tags-container';
+
+        // Flusso Tag
+        if (existingLog.flow && existingLog.flow !== 'none') {
+          const flowObj = window.ChronosCycle.FLOW_LEVELS.find(f => f.id === existingLog.flow);
+          if (flowObj) {
+            const flowTag = document.createElement('span');
+            flowTag.className = 'cycle-cell-tag flow-tag';
+            flowTag.innerHTML = `<span>${flowObj.icon}</span> <span>${flowObj.label}</span>`;
+            tagsContainer.appendChild(flowTag);
+          }
+        }
+
+        // Sintomi Tags
+        if (existingLog.symptoms && existingLog.symptoms.length > 0) {
+          existingLog.symptoms.slice(0, 2).forEach(symId => {
+            const symObj = window.ChronosCycle.SYMPTOMS_LIST.find(s => s.id === symId);
+            if (symObj) {
+              const symTag = document.createElement('span');
+              symTag.className = 'cycle-cell-tag symptom-tag';
+              symTag.innerHTML = `<span>${symObj.icon}</span> <span>${symObj.label}</span>`;
+              tagsContainer.appendChild(symTag);
+            }
+          });
+          if (existingLog.symptoms.length > 2) {
+            const moreTag = document.createElement('span');
+            moreTag.className = 'cycle-cell-tag symptom-tag';
+            moreTag.textContent = `+${existingLog.symptoms.length - 2}`;
+            tagsContainer.appendChild(moreTag);
+          }
+        }
+
+        if (tagsContainer.children.length > 0) {
+          cell.appendChild(tagsContainer);
+        }
       }
 
       cell.addEventListener('click', () => {
@@ -1186,22 +1218,32 @@
       moodBox.appendChild(btn);
     });
 
-    // Symptoms pills
+    // Checkable Symptoms Chips with Checkbox
+    symptomsBox.className = 'symptoms-checkbox-grid';
     symptomsBox.innerHTML = '';
     window.ChronosCycle.SYMPTOMS_LIST.forEach(sym => {
-      const pill = document.createElement('div');
-      pill.className = `symptom-pill ${currentSymptoms.has(sym.id) ? 'selected' : ''}`;
-      pill.innerHTML = `<span>${sym.icon}</span><span>${sym.label}</span>`;
-      pill.addEventListener('click', () => {
+      const isSelected = currentSymptoms.has(sym.id);
+      const chip = document.createElement('div');
+      chip.className = `symptom-checkbox-chip ${isSelected ? 'selected' : ''}`;
+      chip.innerHTML = `
+        <span class="chip-box">${isSelected ? '✓' : ''}</span>
+        <span>${sym.icon}</span>
+        <span>${sym.label}</span>
+      `;
+      chip.addEventListener('click', () => {
         if (currentSymptoms.has(sym.id)) {
           currentSymptoms.delete(sym.id);
-          pill.classList.remove('selected');
+          chip.classList.remove('selected');
+          const box = chip.querySelector('.chip-box');
+          if (box) box.textContent = '';
         } else {
           currentSymptoms.add(sym.id);
-          pill.classList.add('selected');
+          chip.classList.add('selected');
+          const box = chip.querySelector('.chip-box');
+          if (box) box.textContent = '✓';
         }
       });
-      symptomsBox.appendChild(pill);
+      symptomsBox.appendChild(chip);
     });
 
     if (tempInput) tempInput.value = log.temperature || '';
@@ -3151,6 +3193,24 @@
 
         openModal('cycleSettingsModal');
       }
+
+      document.querySelectorAll('.stepper-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const targetId = btn.dataset.target;
+          const input = document.getElementById(targetId);
+          if (!input) return;
+          const min = parseInt(input.min, 10) || 1;
+          const max = parseInt(input.max, 10) || 100;
+          let val = parseInt(input.value, 10);
+          if (isNaN(val)) val = min;
+          if (btn.classList.contains('stepper-plus')) {
+            if (val < max) input.value = val + 1;
+          } else if (btn.classList.contains('stepper-minus')) {
+            if (val > min) input.value = val - 1;
+          }
+        });
+      });
 
       if (cycleInitSetupBtn) cycleInitSetupBtn.addEventListener('click', openCycleSettingsModal);
       if (openCycleSettingsBtn) openCycleSettingsBtn.addEventListener('click', openCycleSettingsModal);
