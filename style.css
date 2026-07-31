@@ -3185,7 +3185,7 @@ body {
   flex-shrink: 0;
 }
 .legend-dot.phase-menstrual { background: #f43f5e; box-shadow: 0 0 0 2px #ffe4e6; }
-.legend-dot.phase-ovulatory { background: #f97316; box-shadow: 0 0 0 2px #ffedd5; }
+.legend-dot.phase-ovulatory { background: #8b5cf6; box-shadow: 0 0 0 2px #ede9fe; }
 
 .cycle-calendar-grid {
   display: grid;
@@ -3241,12 +3241,12 @@ body {
   outline-offset: -1px;
 }
 
-/* Colorazione per 2 sole Fasi (Mestruazione Rosso & Ovulazione Arancione) */
-.cycle-day-cell.phase-menstrual { border-top-color: #f43f5e !important; background: rgba(254, 242, 242, 0.6); }
+/* Colorazione per 2 sole Fasi (Mestruazione Rosso & Ovulazione Viola ad Alto Contrasto) */
+.cycle-day-cell.phase-menstrual { border-top-color: #f43f5e !important; background: rgba(254, 242, 242, 0.65); }
 .cycle-day-cell.phase-menstrual .day-number { color: #e11d48; font-weight: 700; }
 
-.cycle-day-cell.phase-ovulatory { border-top-color: #f97316 !important; background: rgba(255, 247, 237, 0.6); }
-.cycle-day-cell.phase-ovulatory .day-number { color: #c2410c; font-weight: 700; }
+.cycle-day-cell.phase-ovulatory { border-top-color: #8b5cf6 !important; background: rgba(237, 233, 254, 0.65); }
+.cycle-day-cell.phase-ovulatory .day-number { color: #6d28d9; font-weight: 700; }
 
 /* Neutral per Follicolare e Luteale */
 .cycle-day-cell.phase-follicular,
