@@ -434,12 +434,6 @@
       return (this.cycleLogs && this.cycleLogs[dateStr]) ? this.cycleLogs[dateStr] : null;
     },
 
-      if (!skipRedisSync && this.token) {
-        this.pushToRedis();
-      }
-      this.notify();
-    },
-
     loadDemoData() {
       const todayStr = formatDateKey(new Date());
       const tomorrow = new Date();
