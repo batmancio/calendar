@@ -3358,9 +3358,7 @@ body {
   flex-shrink: 0;
 }
 .legend-dot.phase-menstrual { background: #f43f5e; box-shadow: 0 0 0 2px #ffe4e6; }
-.legend-dot.phase-follicular { background: #10b981; box-shadow: 0 0 0 2px #d1fae5; }
-.legend-dot.phase-ovulatory { background: #ec4899; box-shadow: 0 0 0 2px #fce7f3; }
-.legend-dot.phase-luteal { background: #f59e0b; box-shadow: 0 0 0 2px #fef3c7; }
+.legend-dot.phase-ovulatory { background: #8b5cf6; box-shadow: 0 0 0 2px #ede9fe; }
 
 /* Daily Log Box Form */
 .cycle-log-box {
