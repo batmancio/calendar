@@ -546,21 +546,27 @@ app.get('/api/sync', authenticateToken, async (req, res) => {
   const eventsKey = `user:${username}:events`;
   const tasksKey = `user:${username}:tasks`;
   const tombstonesKey = `user:${username}:tombstones`;
+  const cycleSettingsKey = `user:${username}:cycle_settings`;
+  const cycleLogsKey = `user:${username}:cycle_logs`;
 
   const eventsRaw = await getDbItem(eventsKey);
   const tasksRaw = await getDbItem(tasksKey);
   const tombstonesRaw = await getDbItem(tombstonesKey);
+  const cycleSettingsRaw = await getDbItem(cycleSettingsKey);
+  const cycleLogsRaw = await getDbItem(cycleLogsKey);
 
   const events = eventsRaw ? JSON.parse(eventsRaw) : [];
   const tasks = tasksRaw ? JSON.parse(tasksRaw) : [];
   const tombstones = tombstonesRaw ? JSON.parse(tombstonesRaw) : [];
+  const cycleSettings = cycleSettingsRaw ? JSON.parse(cycleSettingsRaw) : null;
+  const cycleLogs = cycleLogsRaw ? JSON.parse(cycleLogsRaw) : null;
 
-  res.json({ success: true, events, tasks, tombstones, cloudConnected: isRedisConnected });
+  res.json({ success: true, events, tasks, tombstones, cycleSettings, cycleLogs, cloudConnected: isRedisConnected });
 });
 
 app.post('/api/sync', authenticateToken, async (req, res) => {
   const username = req.username;
-  const { events, tasks, tombstones } = req.body;
+  const { events, tasks, tombstones, cycleSettings, cycleLogs } = req.body;
 
   if (!Array.isArray(events) || !Array.isArray(tasks)) {
     return res.status(400).json({ error: 'Formato dati non valido' });
@@ -574,6 +580,12 @@ app.post('/api/sync', authenticateToken, async (req, res) => {
   await setDbItem(tasksKey, JSON.stringify(tasks));
   if (Array.isArray(tombstones)) {
     await setDbItem(tombstonesKey, JSON.stringify(tombstones));
+  }
+  if (cycleSettings && typeof cycleSettings === 'object') {
+    await setDbItem(`user:${username}:cycle_settings`, JSON.stringify(cycleSettings));
+  }
+  if (cycleLogs && typeof cycleLogs === 'object') {
+    await setDbItem(`user:${username}:cycle_logs`, JSON.stringify(cycleLogs));
   }
 
   res.json({ success: true, timestamp: Date.now(), cloudConnected: isRedisConnected });
@@ -820,6 +832,31 @@ function startPushScheduler() {
             pushedTags.add(tag);
           }
         });
+
+        // Promemoria Ciclo Mestruale (Notifica Discreta o Esplicita)
+        const cycleSettingsRaw = await getDbItem(`user:${username}:cycle_settings`);
+        if (cycleSettingsRaw) {
+          try {
+            const cycleSettings = JSON.parse(cycleSettingsRaw);
+            if (cycleSettings.enabled && cycleSettings.lastPeriodStart && now.getHours() >= 9) {
+              const ChronosCycle = require('./js/cycle.js');
+              const cycleState = ChronosCycle.calculateCycleState(todayStr, cycleSettings);
+
+              if (cycleState.enabled) {
+                const tag = `cycle_push_${todayStr}`;
+                if (!pushedTags.has(tag)) {
+                  if (cycleState.daysUntilNextPeriod === 2 || cycleState.daysUntilNextPeriod === 1) {
+                    const isDiscrete = cycleSettings.discreteNotifications !== false;
+                    const title = isDiscrete ? '🌸 Promemoria Planner' : '🌸 Promemoria Ciclo Mestruale';
+                    const body = isDiscrete ? 'Hai un promemoria personalizzato previsto nei prossimi giorni.' : `Il tuo prossimo ciclo è previsto tra ${cycleState.daysUntilNextPeriod} giorni.`;
+                    sendPushToUser(username, title, body, tag);
+                    pushedTags.add(tag);
+                  }
+                }
+              }
+            }
+          } catch (e) { }
+        }
 
         await setDbItem(pushedKey, JSON.stringify(Array.from(pushedTags)));
       }

@@ -24,7 +24,7 @@
     rel="stylesheet">
 
   <!-- CSS Styles -->
-  <link rel="stylesheet" href="style.css?v=13">
+  <link rel="stylesheet" href="style.css?v=15">
 </head>
 
 <body>
@@ -105,6 +105,13 @@
                 <span>Notifica di Prova (Ad App Chiusa)</span>
               </button>
 
+              <button type="button" id="toggleCycleFeatureBtn" class="dropdown-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+                <span id="toggleCycleBtnText">Abilita Monitoraggio Ciclo</span>
+              </button>
+
               <button type="button" id="openChangePasswordModalBtn" class="dropdown-item">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
@@ -181,6 +188,12 @@
               <polyline points="10 9 9 9 8 9"></polyline>
             </svg>
             <span class="btn-text">Catalogo Memo</span>
+          </button>
+          <button id="viewCycleBtn" class="btn-tab" role="tab" aria-selected="false">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+            <span class="btn-text">Ciclo</span>
           </button>
         </div>
       </div>
@@ -342,10 +355,6 @@
 
           <!-- Selected Day Agenda Drawer (Mobile Apple Calendar Style) -->
           <div id="selectedDayPanel" class="selected-day-panel mobile-only">
-            <div class="selected-day-header">
-              <h4 id="selectedDayTitle">Venerdì 31 Luglio 2026</h4>
-              <button id="addSelectedDayEventBtn" class="btn btn-secondary-sm">+ Aggiungi</button>
-            </div>
             <div id="selectedDayList" class="selected-day-list">
               <!-- Lista eventi/memo del giorno selezionato -->
             </div>
@@ -379,6 +388,154 @@
 
           <div id="memoCatalogGrid" class="memo-catalog-grid">
             <!-- Dynamic columns & cards rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Catalogo Ciclo Mestruale Dedicated View Container -->
+        <div id="cycleViewContainer" class="view-container hidden">
+          <!-- Unconfigured / Setup State Banner if cycle is not enabled -->
+          <div id="cycleUnconfiguredBanner" class="cycle-unconfigured-hero hidden">
+            <div class="cycle-unconfigured-card">
+              <div class="cycle-hero-icon">🌸</div>
+              <h2>Monitoraggio Ciclo & Fasi</h2>
+              <p>Configura il tuo ciclo mestruale per monitorare le tue fasi, la finestra fertile, annotare i sintomi giornalieri e ricevere promemoria discreti.</p>
+              <button id="cycleInitSetupBtn" class="btn btn-primary btn-lg">Configura Ciclo Ora</button>
+            </div>
+          </div>
+
+          <!-- Main Cycle Dashboard when configured -->
+          <div id="cycleDashboard" class="cycle-dashboard-wrapper">
+            <!-- Header Toolbar Ciclo -->
+            <div class="cycle-header-toolbar">
+              <div class="cycle-title-wrap">
+                <h3>🌸 Ciclo & Benessere</h3>
+                <span id="cycleCurrentPhaseBadge" class="phase-badge phase-menstrual">Fase Mestruale</span>
+              </div>
+              <div class="cycle-action-btns">
+                <button id="openCycleSettingsBtn" class="btn btn-secondary-sm" title="Impostazioni Ciclo">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                  </svg>
+                  <span>Impostazioni</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Hero Summary Cards (3 cards grid) -->
+            <div class="cycle-hero-grid">
+              <div class="cycle-card cycle-card-hero">
+                <div class="cycle-card-icon" id="cyclePhaseIcon">🩸</div>
+                <div class="cycle-card-body">
+                  <span class="card-subtitle">Stato Attuale</span>
+                  <h4 id="cycleDayTitle">Giorno 1 del ciclo</h4>
+                  <p id="cyclePhaseDesc" class="card-desc">Fase Mestruale in corso</p>
+                </div>
+              </div>
+
+              <div class="cycle-card cycle-card-hero">
+                <div class="cycle-card-icon">📅</div>
+                <div class="cycle-card-body">
+                  <span class="card-subtitle">Previsioni</span>
+                  <h4 id="cycleNextPeriodCountdown">Prossimo ciclo tra -- giorni</h4>
+                  <p id="cycleNextPeriodSub" class="card-desc">Inizio previsto: --</p>
+                </div>
+              </div>
+
+              <div class="cycle-card cycle-card-hero">
+                <div class="cycle-card-icon">✨</div>
+                <div class="cycle-card-body">
+                  <span class="card-subtitle">Consiglio Benessere</span>
+                  <h4 id="cycleTipTitle">Ascolta il tuo corpo</h4>
+                  <p id="cycleTipBody" class="card-desc">Riposo e buona idratazione.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Main Layout: Left = Cycle Calendar, Right = Daily Symptom Logger -->
+            <div class="cycle-main-grid">
+              <!-- Left: Dedicated Cycle Calendar -->
+              <div class="cycle-calendar-box">
+                <div class="cycle-calendar-toolbar">
+                  <button id="cyclePrevMonthBtn" class="btn-icon" title="Mese precedente">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                  </button>
+                  <h4 id="cycleMonthYearLabel" class="current-month-title">Luglio 2026</h4>
+                  <button id="cycleNextMonthBtn" class="btn-icon" title="Mese successivo">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </button>
+                </div>
+
+                <div class="calendar-days-header">
+                  <div>Lun</div><div>Mar</div><div>Mer</div><div>Gio</div><div>Ven</div><div>Sab</div><div>Dom</div>
+                </div>
+                <div id="cycleCalendarGrid" class="cycle-calendar-grid">
+                  <!-- Dynamic days -->
+                </div>
+
+                <!-- Legenda Fasi -->
+                <div class="cycle-legend">
+                  <span class="legend-item"><span class="legend-dot phase-menstrual"></span> Mestruazione</span>
+                  <span class="legend-item"><span class="legend-dot phase-follicular"></span> Follicolare</span>
+                  <span class="legend-item"><span class="legend-dot phase-ovulatory"></span> Fertile / Ovulazione</span>
+                  <span class="legend-item"><span class="legend-dot phase-luteal"></span> Luteale / PMS</span>
+                </div>
+              </div>
+
+              <!-- Right: Selected Day Log Form -->
+              <div class="cycle-log-box">
+                <div class="log-box-header">
+                  <h4 id="cycleSelectedDayTitle">Registro del 31 Luglio 2026</h4>
+                  <span id="cycleSelectedDayPhase" class="phase-pill">Mestruale</span>
+                </div>
+
+                <form id="cycleLogForm" class="cycle-log-form">
+                  <!-- Flusso -->
+                  <div class="form-group">
+                    <label>Flusso Mestruale</label>
+                    <div class="flow-selector" id="flowSelector">
+                      <!-- Rendered by JS -->
+                    </div>
+                  </div>
+
+                  <!-- Umore -->
+                  <div class="form-group">
+                    <label>Stato d'Animo / Umore</label>
+                    <div class="mood-selector" id="moodSelector">
+                      <!-- Rendered by JS -->
+                    </div>
+                  </div>
+
+                  <!-- Sintomi -->
+                  <div class="form-group">
+                    <label>Sintomi Fisici</label>
+                    <div class="symptoms-grid" id="symptomsGrid">
+                      <!-- Rendered by JS -->
+                    </div>
+                  </div>
+
+                  <!-- Note e Temperatura -->
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label for="cycleTempInput">Temp. Basale (°C)</label>
+                      <input type="number" id="cycleTempInput" step="0.1" placeholder="Es. 36.6">
+                    </div>
+                    <div class="form-group full-width">
+                      <label for="cycleNotesInput">Note / Annotazioni</label>
+                      <input type="text" id="cycleNotesInput" placeholder="Sintomi specifici, benessere...">
+                    </div>
+                  </div>
+
+                  <div class="form-actions-right">
+                    <button type="submit" class="btn btn-primary">Salva Registro del Giorno</button>
+                  </div>
+                </form>
+              </div>
+            </div>
           </div>
         </div>
       </main>
@@ -443,6 +600,12 @@
         <line x1="16" y1="17" x2="8" y2="17"></line>
       </svg>
       <span>Memo</span>
+    </button>
+    <button class="bottom-nav-item" data-view="cycle">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+      </svg>
+      <span>Ciclo</span>
     </button>
     <button class="bottom-nav-item" id="bottomNavSidebarBtn">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -858,6 +1021,56 @@
     </div>
   </div>
 
+  <!-- Modal: Impostazioni Ciclo -->
+  <div id="cycleSettingsModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3>🌸 Impostazioni Ciclo Mestruale</h3>
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Configura i parametri base per il calcolo delle tue fasi.</p>
+        </div>
+        <button class="btn-icon modal-close" data-close="cycleSettingsModal">&times;</button>
+      </div>
+      <form id="cycleSettingsForm" class="modal-form">
+        <div class="form-group">
+          <label for="cycleLastPeriodStartInput">Inizio dell'ultimo ciclo mestruale *</label>
+          <input type="date" id="cycleLastPeriodStartInput" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cycleAvgLengthInput">Durata media ciclo (giorni) *</label>
+            <input type="number" id="cycleAvgLengthInput" min="20" max="45" value="28" required>
+            <small class="help-text">Di norma tra 21 e 35 giorni.</small>
+          </div>
+          <div class="form-group">
+            <label for="cyclePeriodLengthInput">Durata mestruazioni (giorni) *</label>
+            <input type="number" id="cyclePeriodLengthInput" min="2" max="10" value="5" required>
+            <small class="help-text">Di norma tra 3 e 7 giorni.</small>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="cycleLutealLengthInput">Durata fase luteale (giorni)</label>
+          <input type="number" id="cycleLutealLengthInput" min="10" max="16" value="14">
+          <small class="help-text">Predefinito: 14 giorni (intervallo tra ovulazione e ciclo successivo).</small>
+        </div>
+
+        <div class="form-group checkbox-group" style="margin-top: 8px;">
+          <label class="checkbox-label">
+            <input type="checkbox" id="cycleDiscreteNotificationsInput" checked>
+            <span>Usa notifiche push discrete (testo riservato orientato alla privacy)</span>
+          </label>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-tertiary modal-close" data-close="cycleSettingsModal">Annulla</button>
+          <button type="submit" class="btn btn-primary">Salva Impostazioni</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Toast Container -->
   <div id="toastContainer" class="toast-container"></div>
 
@@ -865,7 +1078,8 @@
   <input type="date" id="taskDateAssignInput" class="visually-hidden-date-input" aria-hidden="true">
 
   <!-- JavaScript -->
-  <script src="js/app.js?v=13"></script>
+  <script src="js/cycle.js?v=1"></script>
+  <script src="js/app.js?v=15"></script>
 </body>
 
 </html>

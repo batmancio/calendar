@@ -2655,6 +2655,37 @@ body {
   font-weight: 700;
 }
 
+/* Past Days Fading / Graying out */
+.calendar-cell.past-day {
+  background-color: #f8fafc;
+  opacity: 0.75;
+  filter: grayscale(0.2);
+}
+
+.calendar-cell.past-day:hover {
+  opacity: 0.95;
+  filter: grayscale(0);
+}
+
+.calendar-cell.past-day .cell-day-num {
+  color: #94a3b8;
+}
+
+/* Italian Holidays (Giorni Festivi) */
+.calendar-cell.holiday-day {
+  background-color: #fff1f2;
+}
+
+.calendar-cell.holiday-day.past-day {
+  background-color: #fff5f5;
+  opacity: 0.8;
+}
+
+.cell-day-num.holiday-num {
+  color: #e11d48 !important;
+  font-weight: 700;
+}
+
 /* Mobile Apple Calendar View Media Query (<= 640px) */
 @media (max-width: 640px) {
   .cell-events-container {
@@ -2702,26 +2733,11 @@ body {
   background: #ffffff;
   border: 1px solid var(--bg-card-border);
   border-radius: var(--radius-md);
-  padding: 14px;
+  padding: 12px;
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.selected-day-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--bg-card-border);
-}
-
-.selected-day-header h4 {
-  font-family: var(--font-heading);
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text-main);
+  gap: 8px;
 }
 
 .selected-day-list {
@@ -2791,8 +2807,290 @@ body {
   color: var(--text-muted);
 }
 
-.event-highlight-sync {
+.selected-day-card .event-highlight-sync {
   box-shadow: 0 0 0 2px var(--accent-primary), 0 4px 12px rgba(79, 70, 229, 0.25) !important;
   transform: scale(1.02);
   z-index: 10 !important;
+}
+
+/* ==========================================================================
+   DEDICATED CYCLE VIEW (#cycleViewContainer) & CYCLE MODULE STYLES
+   ========================================================================== */
+.cycle-unconfigured-hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 420px;
+  padding: 24px;
+}
+.cycle-unconfigured-card {
+  background: #ffffff;
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-lg);
+  padding: 36px 28px;
+  max-width: 480px;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.cycle-hero-icon {
+  font-size: 3rem;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.cycle-dashboard-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.cycle-header-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--bg-card-border);
+}
+.cycle-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cycle-title-wrap h3 {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+.phase-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.phase-menstrual { background: #ffe4e6; color: #e11d48; border: 1px solid #fecdd3; }
+.phase-follicular { background: #d1fae5; color: #047857; border: 1px solid #a7f3d0; }
+.phase-ovulatory { background: #fce7f3; color: #be185d; border: 1px solid #fbcfe8; }
+.phase-luteal { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+
+/* Cycle Hero Grid */
+.cycle-hero-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+@media (max-width: 768px) {
+  .cycle-hero-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.cycle-card-hero {
+  background: #ffffff;
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.cycle-card-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  border-radius: 50%;
+}
+.cycle-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cycle-card-body .card-subtitle {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.cycle-card-body h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+.cycle-card-body .card-desc {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* Main Layout Grid inside Cycle View */
+.cycle-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 992px) {
+  .cycle-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.cycle-calendar-box {
+  background: #ffffff;
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cycle-calendar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+}
+.cycle-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.cycle-day-cell {
+  min-height: 54px;
+  border: 1px solid #f1f5f9;
+  border-radius: 6px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.cycle-day-cell:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+.cycle-day-cell.other-month {
+  opacity: 0.35;
+}
+.cycle-day-cell.today {
+  border-color: var(--accent-primary);
+  font-weight: 700;
+}
+.cycle-day-cell.selected {
+  box-shadow: 0 0 0 2px var(--accent-primary);
+  background: var(--accent-light);
+}
+.cycle-day-cell .day-number {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.cycle-day-cell.phase-menstrual { background: #ffe4e6; border-color: #fecdd3; }
+.cycle-day-cell.phase-follicular { background: #ecfdf5; border-color: #a7f3d0; }
+.cycle-day-cell.phase-ovulatory { background: #fce7f3; border-color: #fbcfe8; }
+.cycle-day-cell.phase-luteal { background: #fffbeb; border-color: #fde68a; }
+
+.cycle-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* Daily Log Box Form */
+.cycle-log-box {
+  background: #ffffff;
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.log-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.log-box-header h4 {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+.flow-selector,
+.mood-selector {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.flow-btn,
+.mood-btn {
+  padding: 6px 10px;
+  border-radius: 16px;
+  border: 1px solid var(--bg-card-border);
+  background: #f8fafc;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.flow-btn.selected,
+.mood-btn.selected {
+  background: var(--accent-light);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  font-weight: 700;
+}
+.symptoms-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-top: 4px;
+}
+.symptom-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--bg-card-border);
+  background: #f8fafc;
+  font-size: 0.76rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.symptom-pill.selected {
+  background: #ffe4e6;
+  border-color: #f43f5e;
+  color: #be123c;
+  font-weight: 600;
 }

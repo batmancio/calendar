@@ -292,6 +292,7 @@
   // ==========================================
   const AppState = {
     currentDate: new Date(),
+    selectedDate: null,
     currentView: 'month',
     sidebarTab: 'undated',
     filterCategory: 'all',
@@ -337,6 +338,16 @@
       return `planner_${uname}_tombstones_v1`;
     },
 
+    getUserCycleSettingsStorageKey() {
+      const uname = this.username || 'guest';
+      return `planner_${uname}_cycle_settings_v1`;
+    },
+
+    getUserCycleLogsStorageKey() {
+      const uname = this.username || 'guest';
+      return `planner_${uname}_cycle_logs_v1`;
+    },
+
     init() {
       this.loadFromStorage();
       this.checkAuthSession();
@@ -354,20 +365,30 @@
           const storedEvents = localStorage.getItem(this.getUserEventsStorageKey());
           const storedTasks = localStorage.getItem(this.getUserTasksStorageKey());
           const storedTombstones = localStorage.getItem(this.getUserTombstonesStorageKey());
+          const storedCycleSettings = localStorage.getItem(this.getUserCycleSettingsStorageKey());
+          const storedCycleLogs = localStorage.getItem(this.getUserCycleLogsStorageKey());
+
           this.events = storedEvents ? JSON.parse(storedEvents) : [];
           this.tasks = storedTasks ? JSON.parse(storedTasks) : [];
           this.tombstones = storedTombstones ? JSON.parse(storedTombstones) : [];
+          this.cycleSettings = storedCycleSettings ? JSON.parse(storedCycleSettings) : (window.ChronosCycle ? { ...window.ChronosCycle.DEFAULT_CYCLE_SETTINGS } : {});
+          this.cycleLogs = storedCycleLogs ? JSON.parse(storedCycleLogs) : {};
+
           this.pruneTombstones();
         } else {
           this.events = [];
           this.tasks = [];
           this.tombstones = [];
+          this.cycleSettings = window.ChronosCycle ? { ...window.ChronosCycle.DEFAULT_CYCLE_SETTINGS } : {};
+          this.cycleLogs = {};
         }
       } catch (e) {
         console.error('Errore caricamento localStorage:', e);
         this.events = [];
         this.tasks = [];
         this.tombstones = [];
+        this.cycleSettings = window.ChronosCycle ? { ...window.ChronosCycle.DEFAULT_CYCLE_SETTINGS } : {};
+        this.cycleLogs = {};
       }
     },
 
@@ -383,10 +404,35 @@
           localStorage.setItem(this.getUserEventsStorageKey(), JSON.stringify(this.events));
           localStorage.setItem(this.getUserTasksStorageKey(), JSON.stringify(this.tasks));
           localStorage.setItem(this.getUserTombstonesStorageKey(), JSON.stringify(this.tombstones));
+          localStorage.setItem(this.getUserCycleSettingsStorageKey(), JSON.stringify(this.cycleSettings || {}));
+          localStorage.setItem(this.getUserCycleLogsStorageKey(), JSON.stringify(this.cycleLogs || {}));
         }
       } catch (e) {
         console.error('Errore salvataggio localStorage:', e);
       }
+
+      if (!skipRedisSync && this.token) {
+        this.pushToRedis();
+      }
+      this.notify();
+    },
+
+    updateCycleSettings(newSettings) {
+      this.cycleSettings = { ...this.cycleSettings, ...newSettings };
+      this.saveToStorage();
+      showToast('Impostazioni ciclo aggiornate.');
+    },
+
+    setCycleLog(dateStr, logData) {
+      if (!this.cycleLogs) this.cycleLogs = {};
+      this.cycleLogs[dateStr] = { ...logData, updatedAt: Date.now() };
+      this.saveToStorage();
+      showToast('Registro del giorno salvato.');
+    },
+
+    getCycleLog(dateStr) {
+      return (this.cycleLogs && this.cycleLogs[dateStr]) ? this.cycleLogs[dateStr] : null;
+    },
 
       if (!skipRedisSync && this.token) {
         this.pushToRedis();
@@ -658,7 +704,9 @@
         body: JSON.stringify({
           events: this.events,
           tasks: this.tasks,
-          tombstones: this.tombstones
+          tombstones: this.tombstones,
+          cycleSettings: this.cycleSettings,
+          cycleLogs: this.cycleLogs
         })
       })
         .then(res => { if (!res.ok) throw new Error('sync failed'); this.hasPendingSync = false; })
@@ -712,6 +760,13 @@
             const mergedTasks = this.mergeById(this.tasks, data.tasks || []);
             this.events = mergedEvents.filter(e => !deletedIds.has(e.id));
             this.tasks = mergedTasks.filter(t => !deletedIds.has(t.id));
+
+            if (data.cycleSettings) {
+              this.cycleSettings = { ...this.cycleSettings, ...data.cycleSettings };
+            }
+            if (data.cycleLogs) {
+              this.cycleLogs = { ...this.cycleLogs, ...data.cycleLogs };
+            }
 
             this.pruneTombstones();
             this.saveToStorage(true);
@@ -903,6 +958,7 @@
     const viewMonthContainer = document.getElementById('calendarViewContainer');
     const viewAgendaContainer = document.getElementById('agendaViewContainer');
     const viewMemoContainer = document.getElementById('memoCatalogViewContainer');
+    const viewCycleContainer = document.getElementById('cycleViewContainer');
 
     const currDate = AppState.currentDate;
     const year = currDate.getFullYear();
@@ -925,17 +981,255 @@
       if (viewMonthContainer) viewMonthContainer.classList.remove('hidden');
       if (viewAgendaContainer) viewAgendaContainer.classList.add('hidden');
       if (viewMemoContainer) viewMemoContainer.classList.add('hidden');
+      if (viewCycleContainer) viewCycleContainer.classList.add('hidden');
       renderMonthGrid(calendarGrid, year, month);
     } else if (AppState.currentView === 'agenda') {
       if (viewMonthContainer) viewMonthContainer.classList.add('hidden');
       if (viewAgendaContainer) viewAgendaContainer.classList.remove('hidden');
       if (viewMemoContainer) viewMemoContainer.classList.add('hidden');
+      if (viewCycleContainer) viewCycleContainer.classList.add('hidden');
       renderAgendaList(agendaList);
     } else if (AppState.currentView === 'memo') {
       if (viewMonthContainer) viewMonthContainer.classList.add('hidden');
       if (viewAgendaContainer) viewAgendaContainer.classList.add('hidden');
       if (viewMemoContainer) viewMemoContainer.classList.remove('hidden');
+      if (viewCycleContainer) viewCycleContainer.classList.add('hidden');
       renderMemoCatalog();
+    } else if (AppState.currentView === 'cycle') {
+      if (viewMonthContainer) viewMonthContainer.classList.add('hidden');
+      if (viewAgendaContainer) viewAgendaContainer.classList.add('hidden');
+      if (viewMemoContainer) viewMemoContainer.classList.add('hidden');
+      if (viewCycleContainer) viewCycleContainer.classList.remove('hidden');
+      renderCycleView();
+    }
+  }
+
+  let currentCycleCalendarDate = new Date();
+  let selectedCycleDateStr = formatDateKey(new Date());
+
+  function renderCycleView() {
+    const unconfiguredBanner = document.getElementById('cycleUnconfiguredBanner');
+    const dashboard = document.getElementById('cycleDashboard');
+    if (!unconfiguredBanner || !dashboard) return;
+
+    const settings = AppState.cycleSettings;
+    if (!settings || !settings.enabled || !settings.lastPeriodStart) {
+      unconfiguredBanner.classList.remove('hidden');
+      dashboard.classList.add('hidden');
+      return;
+    }
+
+    unconfiguredBanner.classList.add('hidden');
+    dashboard.classList.remove('hidden');
+
+    const todayState = window.ChronosCycle ? window.ChronosCycle.calculateCycleState(new Date(), settings) : { enabled: false };
+
+    // Header badge
+    const phaseBadge = document.getElementById('cycleCurrentPhaseBadge');
+    if (phaseBadge && todayState.phase) {
+      phaseBadge.textContent = todayState.phase.label;
+      phaseBadge.className = `phase-badge ${todayState.phase.badgeClass}`;
+    }
+
+    // Card 1
+    const phaseIcon = document.getElementById('cyclePhaseIcon');
+    const dayTitle = document.getElementById('cycleDayTitle');
+    const phaseDesc = document.getElementById('cyclePhaseDesc');
+    if (phaseIcon) phaseIcon.textContent = todayState.phase ? todayState.phase.icon : '🌸';
+    if (dayTitle) dayTitle.textContent = `Giorno ${todayState.dayOfCycle || 1} del ciclo`;
+    if (phaseDesc) phaseDesc.textContent = todayState.phase ? todayState.phase.name + ' in corso' : '';
+
+    // Card 2
+    const countdownTitle = document.getElementById('cycleNextPeriodCountdown');
+    const countdownSub = document.getElementById('cycleNextPeriodSub');
+    if (countdownTitle) countdownTitle.textContent = `Prossimo ciclo tra ${todayState.daysUntilNextPeriod || 0} giorni`;
+    if (countdownSub) countdownSub.textContent = `Inizio previsto: ${todayState.nextPeriodStartStr || '--'}`;
+
+    // Card 3
+    const tipTitle = document.getElementById('cycleTipTitle');
+    const tipBody = document.getElementById('cycleTipBody');
+    if (tipTitle) tipTitle.textContent = todayState.phase ? todayState.phase.label : 'Consiglio Benessere';
+    if (tipBody) tipBody.textContent = todayState.phase ? todayState.phase.tip : 'Mantieni una buona idratazione e rispetta i ritmi del tuo corpo.';
+
+    renderCycleCalendarGrid();
+    renderCycleLogForm(selectedCycleDateStr);
+  }
+
+  function renderCycleCalendarGrid() {
+    const grid = document.getElementById('cycleCalendarGrid');
+    const label = document.getElementById('cycleMonthYearLabel');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const currDate = currentCycleCalendarDate;
+    const year = currDate.getFullYear();
+    const month = currDate.getMonth();
+
+    if (label) label.textContent = `${MONTH_NAMES_IT[month]} ${year}`;
+
+    const firstDayObj = new Date(year, month, 1);
+    let startingDayOfWeek = firstDayObj.getDay() - 1;
+    if (startingDayOfWeek === -1) startingDayOfWeek = 6;
+
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+    const totalCells = (startingDayOfWeek + daysInMonth) > 35 ? 42 : 35;
+    let dayCounter = 1;
+    let nextMonthDayCounter = 1;
+
+    const todayStr = formatDateKey(new Date());
+
+    for (let i = 0; i < totalCells; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cycle-day-cell';
+
+      let cellDateStr = '';
+      let isOtherMonth = false;
+      let displayDayNum = '';
+
+      if (i < startingDayOfWeek) {
+        isOtherMonth = true;
+        const prevDay = daysInPrevMonth - (startingDayOfWeek - 1 - i);
+        displayDayNum = prevDay;
+        cellDateStr = formatDateKey(new Date(year, month - 1, prevDay));
+      } else if (dayCounter <= daysInMonth) {
+        displayDayNum = dayCounter;
+        cellDateStr = formatDateKey(new Date(year, month, dayCounter));
+        dayCounter++;
+      } else {
+        isOtherMonth = true;
+        displayDayNum = nextMonthDayCounter;
+        cellDateStr = formatDateKey(new Date(year, month + 1, nextMonthDayCounter));
+        nextMonthDayCounter++;
+      }
+
+      if (isOtherMonth) cell.classList.add('other-month');
+      if (cellDateStr === todayStr) cell.classList.add('today');
+      if (cellDateStr === selectedCycleDateStr) cell.classList.add('selected');
+
+      const state = window.ChronosCycle ? window.ChronosCycle.calculateCycleState(cellDateStr, AppState.cycleSettings) : null;
+      if (state && state.enabled && state.phase) {
+        cell.classList.add(state.phase.badgeClass);
+      }
+
+      const numSpan = document.createElement('span');
+      numSpan.className = 'day-number';
+      numSpan.textContent = displayDayNum;
+      cell.appendChild(numSpan);
+
+      const existingLog = AppState.getCycleLog(cellDateStr);
+      if (existingLog && (existingLog.flow !== 'none' || (existingLog.symptoms && existingLog.symptoms.length > 0) || existingLog.mood)) {
+        const logDot = document.createElement('span');
+        logDot.textContent = existingLog.flow === 'heavy' ? '🩸' : (existingLog.flow === 'medium' ? '💧' : '✍️');
+        logDot.style.fontSize = '0.7rem';
+        cell.appendChild(logDot);
+      }
+
+      cell.addEventListener('click', () => {
+        selectedCycleDateStr = cellDateStr;
+        renderCycleCalendarGrid();
+        renderCycleLogForm(selectedCycleDateStr);
+      });
+
+      grid.appendChild(cell);
+    }
+  }
+
+  function renderCycleLogForm(dateStr) {
+    const titleEl = document.getElementById('cycleSelectedDayTitle');
+    const phaseEl = document.getElementById('cycleSelectedDayPhase');
+    const flowBox = document.getElementById('flowSelector');
+    const moodBox = document.getElementById('moodSelector');
+    const symptomsBox = document.getElementById('symptomsGrid');
+    const tempInput = document.getElementById('cycleTempInput');
+    const notesInput = document.getElementById('cycleNotesInput');
+
+    if (!titleEl || !flowBox || !moodBox || !symptomsBox || !window.ChronosCycle) return;
+
+    const targetDateObj = window.ChronosCycle.parseDateKey(dateStr);
+    const dayFormatted = targetDateObj ? `${targetDateObj.getDate()} ${MONTH_NAMES_IT[targetDateObj.getMonth()]} ${targetDateObj.getFullYear()}` : dateStr;
+    titleEl.textContent = `Registro del ${dayFormatted}`;
+
+    const state = window.ChronosCycle.calculateCycleState(dateStr, AppState.cycleSettings);
+    if (phaseEl && state.enabled && state.phase) {
+      phaseEl.textContent = state.phase.name;
+      phaseEl.className = `phase-pill ${state.phase.badgeClass}`;
+    }
+
+    const log = AppState.getCycleLog(dateStr) || {};
+    let currentFlow = log.flow || 'none';
+    let currentMood = log.mood || '';
+    let currentSymptoms = new Set(log.symptoms || []);
+
+    // Flow buttons
+    flowBox.innerHTML = '';
+    window.ChronosCycle.FLOW_LEVELS.forEach(fl => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `flow-btn ${currentFlow === fl.id ? 'selected' : ''}`;
+      btn.textContent = `${fl.icon} ${fl.label}`;
+      btn.addEventListener('click', () => {
+        currentFlow = fl.id;
+        flowBox.querySelectorAll('.flow-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+      });
+      flowBox.appendChild(btn);
+    });
+
+    // Mood buttons
+    moodBox.innerHTML = '';
+    window.ChronosCycle.MOODS_LIST.forEach(m => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `mood-btn ${currentMood === m.id ? 'selected' : ''}`;
+      btn.textContent = `${m.icon} ${m.label}`;
+      btn.addEventListener('click', () => {
+        currentMood = currentMood === m.id ? '' : m.id;
+        moodBox.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+        if (currentMood) btn.classList.add('selected');
+      });
+      moodBox.appendChild(btn);
+    });
+
+    // Symptoms pills
+    symptomsBox.innerHTML = '';
+    window.ChronosCycle.SYMPTOMS_LIST.forEach(sym => {
+      const pill = document.createElement('div');
+      pill.className = `symptom-pill ${currentSymptoms.has(sym.id) ? 'selected' : ''}`;
+      pill.innerHTML = `<span>${sym.icon}</span><span>${sym.label}</span>`;
+      pill.addEventListener('click', () => {
+        if (currentSymptoms.has(sym.id)) {
+          currentSymptoms.delete(sym.id);
+          pill.classList.remove('selected');
+        } else {
+          currentSymptoms.add(sym.id);
+          pill.classList.add('selected');
+        }
+      });
+      symptomsBox.appendChild(pill);
+    });
+
+    if (tempInput) tempInput.value = log.temperature || '';
+    if (notesInput) notesInput.value = log.notes || '';
+
+    const form = document.getElementById('cycleLogForm');
+    if (form) {
+      form.onsubmit = (e) => {
+        e.preventDefault();
+        const tempVal = tempInput ? parseFloat(tempInput.value) : null;
+        const notesVal = notesInput ? notesInput.value.trim() : '';
+
+        AppState.setCycleLog(dateStr, {
+          flow: currentFlow,
+          mood: currentMood,
+          symptoms: Array.from(currentSymptoms),
+          temperature: isNaN(tempVal) ? null : tempVal,
+          notes: notesVal
+        });
+
+        renderCycleCalendarGrid();
+      };
     }
   }
 
@@ -991,6 +1285,19 @@
         cell.classList.add('other-month');
       }
 
+      if (cellDateStr < todayStr) {
+        cell.classList.add('past-day');
+      }
+
+      const cellYear = parseInt(cellDateStr.substring(0, 4), 10);
+      const cellHolidays = getItalianHolidays(cellYear);
+      const holidayName = cellHolidays[cellDateStr];
+
+      if (holidayName) {
+        cell.classList.add('holiday-day');
+        cell.title = `Festivo: ${holidayName}`;
+      }
+
       cell.dataset.date = cellDateStr;
 
       const cellHeader = document.createElement('div');
@@ -999,6 +1306,11 @@
       const dayNumSpan = document.createElement('span');
       dayNumSpan.className = 'cell-day-num';
       dayNumSpan.textContent = displayDayNum;
+
+      if (holidayName) {
+        dayNumSpan.classList.add('holiday-num');
+        dayNumSpan.title = holidayName;
+      }
 
       const addBtn = document.createElement('button');
       addBtn.className = 'cell-add-btn';
@@ -1092,7 +1404,12 @@
           e.stopPropagation();
           openTaskModal(task);
         });
-        eventsContainer.appendChild(taskEl);
+        // Mobile Task Dot
+        const dot = document.createElement('span');
+        const catClass = task.category ? `cat-${task.category}` : 'cat-altro';
+        dot.className = `cell-dot task-dot ${catClass}`;
+        dot.title = task.title;
+        dotsContainer.appendChild(dot);
       });
 
       const maxVisible = 2;
@@ -1113,6 +1430,19 @@
       }
 
       cell.appendChild(eventsContainer);
+      cell.appendChild(dotsContainer);
+
+      const currentSelected = AppState.selectedDate || todayStr;
+      if (cellDateStr === currentSelected) {
+        cell.classList.add('selected-day');
+      }
+
+      cell.addEventListener('click', () => {
+        AppState.selectedDate = cellDateStr;
+        document.querySelectorAll('.calendar-cell').forEach(c => c.classList.remove('selected-day'));
+        cell.classList.add('selected-day');
+        renderSelectedDayPanel(cellDateStr);
+      });
 
       addBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1122,6 +1452,61 @@
       setupCellDragAndDrop(cell, cellDateStr);
       container.appendChild(cell);
     }
+
+    renderSelectedDayPanel(AppState.selectedDate || todayStr);
+  }
+
+  function renderSelectedDayPanel(dateStr) {
+    const panel = document.getElementById('selectedDayPanel');
+    const list = document.getElementById('selectedDayList');
+    if (!panel || !list) return;
+
+    const targetDateStr = dateStr || formatDateKey(new Date());
+    list.innerHTML = '';
+
+    const dayEvents = AppState.events.filter(e => {
+      const eventStart = e.date;
+      const eventEnd = e.dateEnd || e.date;
+      return targetDateStr >= eventStart && targetDateStr <= eventEnd;
+    });
+
+    const dayTasks = AppState.tasks.filter(t => t.dueDate === targetDateStr);
+
+    if (dayEvents.length === 0 && dayTasks.length === 0) {
+      list.innerHTML = `<div class="selected-day-empty">Nessun evento o memo per questa data.</div>`;
+      return;
+    }
+
+    dayEvents.forEach(evt => {
+      const item = document.createElement('div');
+      const catClass = evt.category ? `cat-${evt.category}` : 'cat-lavoro';
+      item.className = `selected-day-card event-card ${catClass}`;
+
+      const timeDesc = evt.timeStart ? (formatTimeItalian(evt.timeStart) + (evt.timeEnd ? ' - ' + formatTimeItalian(evt.timeEnd) : '')) : 'Tutto il giorno';
+      item.innerHTML = `
+        <div class="card-left">
+          <strong>${escapeHtml(evt.title)}</strong>
+          <span class="card-sub">${timeDesc} • Categoria: ${evt.category || 'Generale'}</span>
+        </div>
+        <span class="badge-type event">Evento</span>
+      `;
+      item.onclick = () => openEventModal(evt);
+      list.appendChild(item);
+    });
+
+    dayTasks.forEach(task => {
+      const item = document.createElement('div');
+      item.className = `selected-day-card task-card ${task.urgency} ${task.status === 'completed' ? 'completed' : ''}`;
+      item.innerHTML = `
+        <div class="card-left">
+          <strong style="${task.status === 'completed' ? 'text-decoration: line-through; color: var(--text-dim);' : ''}">${escapeHtml(task.title)}</strong>
+          <span class="card-sub">Urgenza: ${task.urgency.toUpperCase()} • Stato: ${task.status}</span>
+        </div>
+        <span class="badge-type task ${task.urgency}">${task.urgency}</span>
+      `;
+      item.onclick = () => openTaskModal(task);
+      list.appendChild(item);
+    });
   }
 
     function setupCellDragAndDrop(cell, dateStr) {
@@ -1400,6 +1785,45 @@
         columnEl.appendChild(cardsContainer);
         gridEl.appendChild(columnEl);
       });
+    }
+
+    function getItalianHolidays(year) {
+      const holidays = {
+        [`${year}-01-01`]: 'Capodanno',
+        [`${year}-01-06`]: 'Epifania',
+        [`${year}-04-25`]: 'Festa della Liberazione',
+        [`${year}-05-01`]: 'Festa del Lavoro',
+        [`${year}-06-02`]: 'Festa della Repubblica',
+        [`${year}-08-15`]: 'Ferragosto',
+        [`${year}-11-01`]: 'Tutti i Santi',
+        [`${year}-12-08`]: 'Immacolata Concezione',
+        [`${year}-12-25`]: 'Natale',
+        [`${year}-12-26`]: 'Santo Stefano'
+      };
+
+      // Calcolo Pasqua (Algoritmo Meeus/Jones/Butcher)
+      const a = year % 19;
+      const b = Math.floor(year / 100);
+      const c = year % 100;
+      const d = Math.floor(b / 4);
+      const e = b % 4;
+      const f = Math.floor((b + 8) / 25);
+      const g = Math.floor((b - f + 1) / 3);
+      const h = (19 * a + b - d - g + 15) % 30;
+      const i = Math.floor(c / 4);
+      const k = c % 4;
+      const l = (32 + 2 * e + 2 * i - h - k) % 7;
+      const m = Math.floor((a + 11 * h + 22 * l) / 451);
+      const month = Math.floor((h + l - 7 * m + 114) / 31);
+      const day = ((h + l - 7 * m + 114) % 31) + 1;
+
+      const easterDate = new Date(year, month - 1, day);
+      holidays[formatDateKey(easterDate)] = 'Pasqua';
+
+      const easterMondayDate = new Date(year, month - 1, day + 1);
+      holidays[formatDateKey(easterMondayDate)] = "Lunedì dell'Angelo (Pasquetta)";
+
+      return holidays;
     }
 
     function formatDateItalian(dateStr) {
@@ -2367,7 +2791,10 @@
       AppState.subscribe(() => {
         renderCalendar();
         renderTasks();
+        updateCycleVisibilityUI();
       });
+
+      updateCycleVisibilityUI();
 
       const openAuthModalBtn = document.getElementById('openAuthModalBtn');
       if (openAuthModalBtn) {
@@ -2617,30 +3044,132 @@
       const viewMonthBtn = document.getElementById('viewMonthBtn');
       const viewAgendaBtn = document.getElementById('viewAgendaBtn');
       const viewMemoBtn = document.getElementById('viewMemoBtn');
+      const viewCycleBtn = document.getElementById('viewCycleBtn');
 
-      if (viewMonthBtn && viewAgendaBtn && viewMemoBtn) {
-        viewMonthBtn.addEventListener('click', () => {
+      function updateHeaderTabActive(view) {
+        if (viewMonthBtn) viewMonthBtn.classList.toggle('active', view === 'month');
+        if (viewAgendaBtn) viewAgendaBtn.classList.toggle('active', view === 'agenda');
+        if (viewMemoBtn) viewMemoBtn.classList.toggle('active', view === 'memo');
+        if (viewCycleBtn) viewCycleBtn.classList.toggle('active', view === 'cycle');
+      }
+
+      if (viewMonthBtn) viewMonthBtn.addEventListener('click', () => { AppState.currentView = 'month'; updateHeaderTabActive('month'); renderCalendar(); });
+      if (viewAgendaBtn) viewAgendaBtn.addEventListener('click', () => { AppState.currentView = 'agenda'; updateHeaderTabActive('agenda'); renderCalendar(); });
+      if (viewMemoBtn) viewMemoBtn.addEventListener('click', () => { AppState.currentView = 'memo'; updateHeaderTabActive('memo'); renderCalendar(); });
+      if (viewCycleBtn) viewCycleBtn.addEventListener('click', () => { AppState.currentView = 'cycle'; updateHeaderTabActive('cycle'); renderCalendar(); });
+
+      function updateCycleVisibilityUI() {
+        const isEnabled = !!(AppState.cycleSettings && AppState.cycleSettings.enabled);
+        const viewCycleBtn = document.getElementById('viewCycleBtn');
+        const mobileCycleItem = document.querySelector('.bottom-nav-item[data-view="cycle"]');
+        const toggleCycleBtnText = document.getElementById('toggleCycleBtnText');
+
+        if (viewCycleBtn) {
+          if (isEnabled) viewCycleBtn.classList.remove('hidden');
+          else viewCycleBtn.classList.add('hidden');
+        }
+
+        if (mobileCycleItem) {
+          if (isEnabled) mobileCycleItem.classList.remove('hidden');
+          else mobileCycleItem.classList.add('hidden');
+        }
+
+        if (toggleCycleBtnText) {
+          toggleCycleBtnText.textContent = isEnabled ? 'Disattiva Monitoraggio Ciclo' : 'Attiva Monitoraggio Ciclo';
+        }
+
+        if (!isEnabled && AppState.currentView === 'cycle') {
           AppState.currentView = 'month';
-          viewMonthBtn.classList.add('active');
-          viewAgendaBtn.classList.remove('active');
-          viewMemoBtn.classList.remove('active');
+          updateHeaderTabActive('month');
+          renderCalendar();
+        }
+      }
+
+      const toggleCycleFeatureBtn = document.getElementById('toggleCycleFeatureBtn');
+      if (toggleCycleFeatureBtn) {
+        toggleCycleFeatureBtn.addEventListener('click', () => {
+          closeAccountDropdown();
+          const currentEnabled = AppState.cycleSettings ? AppState.cycleSettings.enabled : false;
+          const nextEnabled = !currentEnabled;
+
+          if (nextEnabled) {
+            AppState.updateCycleSettings({ enabled: true });
+            updateCycleVisibilityUI();
+            if (!AppState.cycleSettings.lastPeriodStart) {
+              openCycleSettingsModal();
+            } else {
+              showToast('Monitoraggio Ciclo attivato!');
+            }
+          } else {
+            AppState.updateCycleSettings({ enabled: false });
+            updateCycleVisibilityUI();
+            showToast('Monitoraggio Ciclo disattivato.', 'info');
+          }
+        });
+      }
+
+      // Cycle Setup & Settings Handlers
+      const cycleInitSetupBtn = document.getElementById('cycleInitSetupBtn');
+      const openCycleSettingsBtn = document.getElementById('openCycleSettingsBtn');
+      const cycleSettingsForm = document.getElementById('cycleSettingsForm');
+
+      function openCycleSettingsModal() {
+        const settings = AppState.cycleSettings || {};
+        const lastPeriodInput = document.getElementById('cycleLastPeriodStartInput');
+        const avgLengthInput = document.getElementById('cycleAvgLengthInput');
+        const periodLengthInput = document.getElementById('cyclePeriodLengthInput');
+        const lutealLengthInput = document.getElementById('cycleLutealLengthInput');
+        const discreteNotifInput = document.getElementById('cycleDiscreteNotificationsInput');
+
+        if (lastPeriodInput) lastPeriodInput.value = settings.lastPeriodStart || formatDateKey(new Date());
+        if (avgLengthInput) avgLengthInput.value = settings.avgCycleLength || 28;
+        if (periodLengthInput) periodLengthInput.value = settings.avgPeriodLength || 5;
+        if (lutealLengthInput) lutealLengthInput.value = settings.lutealPhaseLength || 14;
+        if (discreteNotifInput) discreteNotifInput.checked = settings.discreteNotifications !== false;
+
+        openModal('cycleSettingsModal');
+      }
+
+      if (cycleInitSetupBtn) cycleInitSetupBtn.addEventListener('click', openCycleSettingsModal);
+      if (openCycleSettingsBtn) openCycleSettingsBtn.addEventListener('click', openCycleSettingsModal);
+
+      if (cycleSettingsForm) {
+        cycleSettingsForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const lastPeriodStart = document.getElementById('cycleLastPeriodStartInput').value;
+          const avgCycleLength = parseInt(document.getElementById('cycleAvgLengthInput').value, 10) || 28;
+          const avgPeriodLength = parseInt(document.getElementById('cyclePeriodLengthInput').value, 10) || 5;
+          const lutealPhaseLength = parseInt(document.getElementById('cycleLutealLengthInput').value, 10) || 14;
+          const discreteNotifications = document.getElementById('cycleDiscreteNotificationsInput').checked;
+
+          AppState.updateCycleSettings({
+            enabled: true,
+            lastPeriodStart,
+            avgCycleLength,
+            avgPeriodLength,
+            lutealPhaseLength,
+            discreteNotifications
+          });
+
+          closeModal('cycleSettingsModal');
           renderCalendar();
         });
+      }
 
-        viewAgendaBtn.addEventListener('click', () => {
-          AppState.currentView = 'agenda';
-          viewAgendaBtn.classList.add('active');
-          viewMonthBtn.classList.remove('active');
-          viewMemoBtn.classList.remove('active');
-          renderCalendar();
+      const cyclePrevMonthBtn = document.getElementById('cyclePrevMonthBtn');
+      const cycleNextMonthBtn = document.getElementById('cycleNextMonthBtn');
+
+      if (cyclePrevMonthBtn) {
+        cyclePrevMonthBtn.addEventListener('click', () => {
+          currentCycleCalendarDate = new Date(currentCycleCalendarDate.getFullYear(), currentCycleCalendarDate.getMonth() - 1, 1);
+          renderCycleCalendarGrid();
         });
+      }
 
-        viewMemoBtn.addEventListener('click', () => {
-          AppState.currentView = 'memo';
-          viewMemoBtn.classList.add('active');
-          viewMonthBtn.classList.remove('active');
-          viewAgendaBtn.classList.remove('active');
-          renderCalendar();
+      if (cycleNextMonthBtn) {
+        cycleNextMonthBtn.addEventListener('click', () => {
+          currentCycleCalendarDate = new Date(currentCycleCalendarDate.getFullYear(), currentCycleCalendarDate.getMonth() + 1, 1);
+          renderCycleCalendarGrid();
         });
       }
 
@@ -3009,9 +3538,11 @@
             const viewMonthBtn = document.getElementById('viewMonthBtn');
             const viewAgendaBtn = document.getElementById('viewAgendaBtn');
             const viewMemoBtn = document.getElementById('viewMemoBtn');
+            const viewCycleBtn = document.getElementById('viewCycleBtn');
             if (viewMonthBtn) viewMonthBtn.classList.toggle('active', view === 'month');
             if (viewAgendaBtn) viewAgendaBtn.classList.toggle('active', view === 'agenda');
             if (viewMemoBtn) viewMemoBtn.classList.toggle('active', view === 'memo');
+            if (viewCycleBtn) viewCycleBtn.classList.toggle('active', view === 'cycle');
 
             renderCalendar();
             closeFab();
