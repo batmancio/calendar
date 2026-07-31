@@ -1061,7 +1061,16 @@
 
     const nextBadge = document.getElementById('cycleHeaderNextBadge');
     if (nextBadge) {
-      nextBadge.textContent = `Prossimo ciclo tra ${todayState.daysUntilNextPeriod || 0} gg (${todayState.nextPeriodStartStr || '--'})`;
+      let formattedNextDate = '';
+      if (todayState.nextPeriodStartStr) {
+        const nextDateObj = window.ChronosCycle ? window.ChronosCycle.parseDateKey(todayState.nextPeriodStartStr) : null;
+        if (nextDateObj) {
+          formattedNextDate = ` (${nextDateObj.getDate()} ${MONTH_NAMES_IT[nextDateObj.getMonth()].substring(0, 3)})`;
+        } else {
+          formattedNextDate = ` (${todayState.nextPeriodStartStr})`;
+        }
+      }
+      nextBadge.textContent = `Prossimo ciclo tra ${todayState.daysUntilNextPeriod || 0} gg${formattedNextDate}`;
     }
 
     renderCycleCalendarGrid();
@@ -3725,6 +3734,10 @@
       // --- FAB Speed Dial ---
       if (fabMainBtn && fabSpeedDial) {
         fabMainBtn.addEventListener('click', () => {
+          if (AppState.currentView === 'cycle') {
+            openCycleLogModal(selectedCycleDateStr);
+            return;
+          }
           const isOpen = fabSpeedDial.classList.contains('open');
           if (isOpen) {
             closeFab();

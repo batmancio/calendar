@@ -342,29 +342,34 @@
 
           <!-- Main Cycle Dashboard when configured -->
           <div id="cycleDashboard" class="cycle-dashboard-wrapper">
-            <!-- Header Toolbar Ciclo -->
-            <div class="cycle-header-toolbar">
-              <div class="cycle-title-wrap">
-                <h3>🌸 Ciclo & Benessere</h3>
+            <!-- Header Card Ciclo -->
+            <div class="cycle-header-card">
+              <div class="cycle-header-top-row">
+                <div class="cycle-brand-title">
+                  <h3>🌸 Ciclo & Benessere</h3>
+                </div>
+                <div class="cycle-action-btns">
+                  <button id="openCycleLogModalBtn" class="btn btn-primary btn-sm" title="Registra Sintomi del Giorno">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>Registra Sintomi</span>
+                  </button>
+                  <button id="openCycleSettingsBtn" class="btn btn-secondary-sm" title="Impostazioni Ciclo">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="3"></circle>
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    <span>Impostazioni</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="cycle-status-pills">
                 <span id="cycleCurrentPhaseBadge" class="phase-badge phase-menstrual">Fase Mestruale</span>
                 <span id="cycleHeaderDayBadge" class="cycle-inline-badge">Giorno 1 del ciclo</span>
                 <span id="cycleHeaderNextBadge" class="cycle-inline-badge info">Prossimo ciclo tra -- gg</span>
-              </div>
-              <div class="cycle-action-btns">
-                <button id="openCycleLogModalBtn" class="btn btn-primary btn-sm" title="Registra Sintomi del Giorno">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
-                  <span>Registra Sintomi</span>
-                </button>
-                <button id="openCycleSettingsBtn" class="btn btn-secondary-sm" title="Impostazioni Ciclo">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                  </svg>
-                  <span>Impostazioni</span>
-                </button>
               </div>
             </div>
 
@@ -386,19 +391,19 @@
                   </button>
                 </div>
 
-                <div class="calendar-days-header">
-                  <div>Lun</div><div>Mar</div><div>Mer</div><div>Gio</div><div>Ven</div><div>Sab</div><div>Dom</div>
-                </div>
-                <div id="cycleCalendarGrid" class="cycle-calendar-grid">
-                  <!-- Dynamic days -->
-                </div>
-
-                <!-- Legenda Fasi -->
+                <!-- Legenda Fasi (Posizionata in rilievo sopra il calendario) -->
                 <div class="cycle-legend">
                   <span class="legend-item"><span class="legend-dot phase-menstrual"></span> Mestruazione</span>
                   <span class="legend-item"><span class="legend-dot phase-follicular"></span> Follicolare</span>
                   <span class="legend-item"><span class="legend-dot phase-ovulatory"></span> Fertile / Ovulazione</span>
                   <span class="legend-item"><span class="legend-dot phase-luteal"></span> Luteale / PMS</span>
+                </div>
+
+                <div class="calendar-days-header">
+                  <div>Lun</div><div>Mar</div><div>Mer</div><div>Gio</div><div>Ven</div><div>Sab</div><div>Dom</div>
+                </div>
+                <div id="cycleCalendarGrid" class="cycle-calendar-grid">
+                  <!-- Dynamic days -->
                 </div>
               </div>
 
